@@ -26,7 +26,9 @@
       "@client-agent/queue": ["packages/queue/src/index.ts"],
       "@client-agent/queue/*": ["packages/queue/src/*"],
       "@client-agent/gmail": ["packages/gmail/src/index.ts"],
-      "@client-agent/gmail/*": ["packages/gmail/src/*"]
+      "@client-agent/gmail/*": ["packages/gmail/src/*"],
+      "@client-agent/discord": ["packages/discord/src/index.ts"],
+      "@client-agent/discord/*": ["packages/discord/src/*"]
     }
   },
   "include": [
