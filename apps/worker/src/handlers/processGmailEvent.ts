@@ -16,10 +16,16 @@ export interface ProcessGmailEventDeps {
   notificationsStream?: string;
 }
 
+export interface ProcessGmailEventOutput {
+  eventId: number;
+  notifyTaskId: number;
+  [key: string]: unknown;
+}
+
 export async function handleProcessGmailEvent(
   task: ParsedTask,
   deps?: ProcessGmailEventDeps,
-): Promise<void> {
+): Promise<ProcessGmailEventOutput> {
   const taskId = Number(task.data.taskId);
   if (Number.isNaN(taskId)) {
     throw new Error('PROCESS_GMAIL_EVENT message missing taskId');
@@ -31,11 +37,15 @@ export async function handleProcessGmailEvent(
   }
 
   if (taskRow.status === TaskStatus.COMPLETED) {
-    return;
+    return (taskRow.output as ProcessGmailEventOutput) ?? { eventId: 0, notifyTaskId: 0 };
   }
 
+  const isStandalone = taskRow.status !== TaskStatus.RUNNING;
+
   try {
-    await markTaskRunning(taskId);
+    if (isStandalone) {
+      await markTaskRunning(taskId);
+    }
 
     const event = taskRow.eventId === null ? null : await getEventById(taskRow.eventId);
     if (!event) {
@@ -51,8 +61,6 @@ export async function handleProcessGmailEvent(
       });
     }
 
-    // Invariant: at most one NOTIFY_DISCORD task per event.
-    // Check-then-create assumes Phase 1's single worker process; a DB-level guard is Phase 2 work.
     const notifyIdempotencyKey = `gmail_event:${event.id}:notify`;
     const existingNotifyTask = await findTaskByIdempotencyKey(notifyIdempotencyKey);
     const notifyTask =
@@ -73,9 +81,17 @@ export async function handleProcessGmailEvent(
     }
 
     await markEventProcessed(event.id);
-    await markTaskCompleted(taskId, { eventId: event.id, notifyTaskId: notifyTask.id });
+
+    const output: ProcessGmailEventOutput = { eventId: event.id, notifyTaskId: notifyTask.id };
+    if (isStandalone) {
+      await markTaskCompleted(taskId, output);
+    }
+
+    return output;
   } catch (err) {
-    await markTaskFailed(taskId, err instanceof Error ? err.message : String(err));
+    if (isStandalone) {
+      await markTaskFailed(taskId, err instanceof Error ? err.message : String(err));
+    }
     throw err;
   }
 }

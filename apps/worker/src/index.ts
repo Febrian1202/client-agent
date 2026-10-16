@@ -1,4 +1,5 @@
 import { STREAMS, createRedisClient } from '@client-agent/queue';
+import { client as dbClient } from '@client-agent/db';
 import { startWorker } from './consumers';
 import { handleProcessGmailEvent } from './handlers/processGmailEvent';
 import { handleNotifyDiscord } from './handlers/notifyDiscord';
@@ -36,8 +37,9 @@ const { shutdown } = await startWorker({
 
 async function shutdownAndExit() {
   console.log('\n🛑 Worker received shutdown signal. Exiting gracefully...');
-  await shutdown();
+  await shutdown(15000);
   redis.disconnect();
+  await dbClient.end();
   process.exit(0);
 }
 

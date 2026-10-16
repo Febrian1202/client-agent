@@ -14,7 +14,15 @@ export interface NotifyDiscordDeps {
   channelId: string;
 }
 
-export async function handleNotifyDiscord(task: ParsedTask, deps: NotifyDiscordDeps): Promise<void> {
+export interface NotifyDiscordOutput {
+  messageId: string;
+  [key: string]: unknown;
+}
+
+export async function handleNotifyDiscord(
+  task: ParsedTask,
+  deps: NotifyDiscordDeps,
+): Promise<NotifyDiscordOutput> {
   const taskId = Number(task.data.taskId);
   if (Number.isNaN(taskId)) {
     throw new Error('NOTIFY_DISCORD message missing taskId');
@@ -26,11 +34,15 @@ export async function handleNotifyDiscord(task: ParsedTask, deps: NotifyDiscordD
   }
 
   if (taskRow.status === TaskStatus.COMPLETED) {
-    return;
+    return (taskRow.output as NotifyDiscordOutput) ?? { messageId: '' };
   }
 
+  const isStandalone = taskRow.status !== TaskStatus.RUNNING;
+
   try {
-    await markTaskRunning(taskId);
+    if (isStandalone) {
+      await markTaskRunning(taskId);
+    }
 
     const event = taskRow.eventId === null ? null : await getEventById(taskRow.eventId);
     if (!event) {
@@ -47,9 +59,17 @@ export async function handleNotifyDiscord(task: ParsedTask, deps: NotifyDiscordD
     };
 
     const { messageId } = await deps.notifier.sendEventNotification(deps.channelId, notification);
-    await markTaskCompleted(taskId, { messageId });
+    const output: NotifyDiscordOutput = { messageId };
+
+    if (isStandalone) {
+      await markTaskCompleted(taskId, output);
+    }
+
+    return output;
   } catch (err) {
-    await markTaskFailed(taskId, err instanceof Error ? err.message : String(err));
+    if (isStandalone) {
+      await markTaskFailed(taskId, err instanceof Error ? err.message : String(err));
+    }
     throw err;
   }
 }
