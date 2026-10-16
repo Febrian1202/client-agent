@@ -11,6 +11,7 @@
   "dependencies": {
     "@client-agent/config": "workspace:*",
     "@client-agent/db": "workspace:*",
+    "@client-agent/discord": "workspace:*",
     "@client-agent/domain": "workspace:*",
     "@client-agent/queue": "workspace:*",
     "@client-agent/shared": "workspace:*"
