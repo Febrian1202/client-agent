@@ -76,21 +76,21 @@ working system that does something useful.
 
 ---
 
-## Phase 2 — Worker System Hardening (Next Up)
+## Phase 2 — Worker System Hardening (Completed)
 
 > **Detailed Guide:** See [docs/phase/phase-2-worker-hardening.md](phase/phase-2-worker-hardening.md)  
-> **Status:** Pending (Ready to implement)
+> **Status:** Completed (Merged to main)
 
 **Goal:** Reliable task processing with retries and failure handling.
 
 ```
-[ ] Task state machine (queued → running → completed/failed → dead)
-[ ] Bounded retries with backoff
-[ ] Dead-letter handling
-[ ] Idempotency key checking
-[ ] Task status API endpoints
-[ ] Worker graceful shutdown
-[ ] Worker restart without losing tasks
+[x] Task state machine (queued → running → completed/failed → dead)
+[x] Bounded retries with backoff
+[x] Dead-letter handling
+[x] Idempotency key checking
+[x] Task status API endpoints
+[x] Worker graceful shutdown
+[x] Worker restart without losing tasks
 ```
 
 **Done when:**
@@ -101,7 +101,7 @@ working system that does something useful.
 
 ---
 
-## Phase 3 — VGen Reader
+## Phase 3 — VGen Reader (Next Up)
 
 > **Detailed Guide:** See [docs/phase/phase-3-vgen-reader.md](phase/phase-3-vgen-reader.md)
 
