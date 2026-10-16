@@ -139,7 +139,7 @@ Creator's Discord Channel
 
 ### Task 1.4: `packages/discord` (Discord Bot & Notification Dispatcher)
 - [x] Create `packages/discord/package.json` (name: `@client-agent/discord`) with `discord.js`.
-- [x] Initialize Discord bot client (`src/client.ts`):
+- [x] Initialize Discord bot client (`src/client.ts`): *(Implemented as a REST notifier with no gateway connection, per the Phase 1 plan.)*
   - Read `DISCORD_BOT_TOKEN`, `DISCORD_APPLICATION_ID`, `DISCORD_GUILD_ID` from config.
   - Connect bot on worker startup or standalone dispatcher.
 - [x] Implement notification formatter (`src/notifications.ts`):

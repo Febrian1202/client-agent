@@ -4,11 +4,14 @@ import { eq } from 'drizzle-orm';
 import { db, events, agentTasks, integrations, getOwnerUserId, upsertIntegration, deleteIntegration } from '@client-agent/db';
 import { TaskType, VGenEventType } from '@client-agent/domain';
 import { GmailApiError, GmailHistoryExpiredError, PubSubAuthError, type GmailClient } from '@client-agent/gmail';
+import { STREAMS, createRedisClient } from '@client-agent/queue';
 import { createGmailWebhookRoutes } from '../src/routes/webhooks/gmail';
 
 const ownerId = await getOwnerUserId();
 const externalId = `wh-${Date.now()}`;
 const historyId = '5000';
+const eventsStream = `${STREAMS.EVENTS}_api_${Date.now()}`;
+const redis = createRedisClient();
 const pushBody = (id: string) => ({
   message: { data: Buffer.from(JSON.stringify({ emailAddress: 'me@example.com', historyId: id })).toString('base64') },
 });
@@ -25,7 +28,7 @@ function fakeClient(overrides: Partial<GmailClient> = {}): GmailClient {
   };
 }
 
-const appWith = (client: GmailClient) => new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => client, audience: null }));
+const appWith = (client: GmailClient) => new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => client, audience: null, eventsStream }));
 
 const post = (app: { handle: (request: Request) => Promise<Response> }, body: unknown) => app.handle(new Request('http://localhost/api/v1/webhooks/google/gmail', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -43,6 +46,8 @@ afterAll(async () => {
   await db.delete(agentTasks).where(eq(agentTasks.idempotencyKey, `gmail_event:${externalId}:process`));
   await db.delete(events).where(eq(events.externalId, externalId));
   await deleteIntegration(ownerId, 'gmail');
+  await redis.del(eventsStream);
+  redis.disconnect();
 });
 
 describe('POST /api/v1/webhooks/google/gmail', () => {
@@ -98,6 +103,7 @@ describe('POST /api/v1/webhooks/google/gmail', () => {
       resolveGmailClient: async () => fakeClient(),
       audience: 'https://agent.example.com/api/v1/webhooks/google/gmail',
       verifyToken: async () => { throw new PubSubAuthError('bad token'); },
+      eventsStream,
     }));
     const res = await post(app, pushBody(historyId));
     expect(res.status).toBe(401);

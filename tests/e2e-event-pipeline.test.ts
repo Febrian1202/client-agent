@@ -16,6 +16,7 @@ const suffix = Date.now();
 const externalId = `e2e-${suffix}`;
 const username = `E2EUser${suffix}`;
 const historyId = '9000';
+const eventsStream = `${STREAMS.EVENTS}_e2e_${suffix}`;
 const notificationsStream = `${STREAMS.NOTIFICATIONS}_e2e_${suffix}`;
 const redis = createRedisClient();
 const createdTaskIds: number[] = [];
@@ -40,7 +41,7 @@ const gmail = {
   }),
 };
 
-const app = new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => gmail, audience: null }));
+const app = new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => gmail, audience: null, eventsStream }));
 const deliver = () => app.handle(new Request('http://localhost/api/v1/webhooks/google/gmail', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(push()),
 }));
@@ -49,6 +50,7 @@ afterAll(async () => {
   for (const id of createdTaskIds) await db.delete(agentTasks).where(eq(agentTasks.id, id));
   await db.delete(events).where(eq(events.externalId, externalId));
   await db.delete(clients).where(eq(clients.username, username));
+  await redis.del(eventsStream);
   await redis.del(notificationsStream);
   await deleteIntegration(ownerId, 'gmail');
   redis.disconnect();
@@ -74,6 +76,7 @@ describe('Phase 1 event pipeline end to end', () => {
     const entries = await redis.xrange(notificationsStream, '-', '+');
     expect(entries).toHaveLength(1);
     const notifyTaskId = Number(fieldsToRecord(entries[0]![1] as string[]).taskId);
+    createdTaskIds.push(notifyTaskId);
 
     const messages: string[] = [];
     const notifier: DiscordNotifier = {
@@ -86,7 +89,6 @@ describe('Phase 1 event pipeline end to end', () => {
 
     expect((await db.select().from(clients).where(eq(clients.username, username)))[0]!.platform).toBe('vgen');
     expect((await db.select().from(agentTasks).where(eq(agentTasks.id, notifyTaskId)))[0]!.status).toBe(TaskStatus.COMPLETED);
-    createdTaskIds.push(notifyTaskId);
     expect((await db.select().from(events).where(eq(events.id, event.id)))[0]!.status as string).toBe('processed');
     expect((await db.select().from(agentTasks).where(eq(agentTasks.id, processTasks[0]!.id)))[0]!.type).toBe(TaskType.PROCESS_GMAIL_EVENT);
   });

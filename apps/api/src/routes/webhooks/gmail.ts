@@ -27,11 +27,13 @@ export interface GmailWebhookDeps {
   resolveGmailClient: () => Promise<GmailClient | null>;
   audience?: string | null;
   verifyToken?: (options: { token: string; audience: string }) => Promise<{ email: string }>;
+  eventsStream?: string;
 }
 
 export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
   const audience =
     deps.audience !== undefined ? deps.audience : config.GOOGLE_PUBSUB_AUDIENCE;
+  const eventsStream = deps.eventsStream ?? STREAMS.EVENTS;
   const verifyToken = deps.verifyToken ?? verifyPubSubPushToken;
 
   if (!audience) {
@@ -176,7 +178,7 @@ export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
             input: { eventId: row.id },
             idempotencyKey: `gmail_event:${row.id}:process`,
           });
-          await publishTask(STREAMS.EVENTS, {
+          await publishTask(eventsStream, {
             type: TaskType.PROCESS_GMAIL_EVENT,
             taskId: String(task.id),
           });
