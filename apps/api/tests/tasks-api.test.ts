@@ -56,6 +56,18 @@ describe('Task Observability & Retry API Endpoints', () => {
     expect(body.pagination.total).toBeGreaterThanOrEqual(1);
   });
 
+  it('GET /api/v1/agent/tasks caps limit at 100', async () => {
+    const res = await app.handle(
+      new Request('http://localhost/api/v1/agent/tasks?limit=500', {
+        headers: { Cookie: cookieHeader },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pagination.limit).toBe(100);
+  });
+
   it('GET /api/v1/agent/tasks/:id returns task detail', async () => {
     const task = await createTask({
       userId: ownerId,

@@ -4,17 +4,37 @@ import {
   createRedisClient,
   STREAMS,
 } from '@client-agent/queue';
+import {
+  agentTasks,
+  createTask,
+  db,
+  getOwnerUserId,
+} from '@client-agent/db';
+import { TaskType } from '@client-agent/domain';
+import { eq } from 'drizzle-orm';
 import { startWorker } from '../src/consumers';
 import { handleTask } from '../src/taskHandler';
 
 describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', () => {
   const redis = createRedisClient();
+  const createdTaskIds: number[] = [];
 
   afterAll(async () => {
+    for (const id of createdTaskIds) {
+      await db.delete(agentTasks).where(eq(agentTasks.id, id));
+    }
     redis.disconnect();
   });
 
   it('drains active in-flight jobs cleanly on shutdown', async () => {
+    const ownerId = await getOwnerUserId();
+    const taskRecord = await createTask({
+      userId: ownerId,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { test: 'shutdown-drain' },
+    });
+    createdTaskIds.push(taskRecord.id);
+
     const testStream = `${STREAMS.EVENTS}_shutdown_${Date.now()}`;
     const group = 'shutdown_group';
     let jobStarted = false;
@@ -41,7 +61,7 @@ describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', ()
     expect(worker.getActiveJobsCount()).toBe(0);
 
     // Enqueue message
-    await redis.xadd(testStream, '*', 'type', 'TEST', 'taskId', '1');
+    await redis.xadd(testStream, '*', 'type', 'TEST', 'taskId', String(taskRecord.id));
 
     // Wait until job starts
     while (!jobStarted) {
@@ -61,6 +81,14 @@ describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', ()
   });
 
   it('strictly bounds shutdown duration when in-flight job exceeds timeout', async () => {
+    const ownerId = await getOwnerUserId();
+    const taskRecord = await createTask({
+      userId: ownerId,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { test: 'shutdown-timeout' },
+    });
+    createdTaskIds.push(taskRecord.id);
+
     const stream = `${STREAMS.EVENTS}_timeout_${Date.now()}`;
     const group = 'timeout_group';
     let jobStarted = false;
@@ -83,7 +111,7 @@ describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', ()
       ],
     });
 
-    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', '1');
+    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', String(taskRecord.id));
     while (!jobStarted) {
       await Bun.sleep(20);
     }
@@ -101,12 +129,20 @@ describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', ()
   });
 
   it('does not process messages if shutdown has already started', async () => {
+    const ownerId = await getOwnerUserId();
+    const taskRecord = await createTask({
+      userId: ownerId,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { test: 'no-process' },
+    });
+    createdTaskIds.push(taskRecord.id);
+
     const stream = `${STREAMS.EVENTS}_no_process_${Date.now()}`;
     const group = 'no_process_group';
     await createConsumerGroupIfNotExists(stream, group, redis);
 
     let processed = false;
-    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', '1');
+    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', String(taskRecord.id));
 
     const result = await handleTask({
       stream,
@@ -126,13 +162,21 @@ describe('Worker Graceful Shutdown & Active Jobs Tracking (Review Focus #4)', ()
   });
 
   it('does not process message if shutdown begins while message is received', async () => {
+    const ownerId = await getOwnerUserId();
+    const taskRecord = await createTask({
+      userId: ownerId,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { test: 'shutdown-mid' },
+    });
+    createdTaskIds.push(taskRecord.id);
+
     const stream = `${STREAMS.EVENTS}_shutdown_mid_${Date.now()}`;
     const group = 'shutdown_mid_group';
     await createConsumerGroupIfNotExists(stream, group, redis);
 
     let processed = false;
     let callCount = 0;
-    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', '1');
+    await redis.xadd(stream, '*', 'type', 'TEST', 'taskId', String(taskRecord.id));
 
     // First check (before consumeNextTask) returns false;
     // Second check (after consumeNextTask returns) returns true!

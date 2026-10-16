@@ -96,6 +96,14 @@ describe('Phase 2 agent_tasks database queries', () => {
     expect(result.limit).toBe(10);
   });
 
+  it('caps pagination limit between 1 and 100', async () => {
+    const resOver = await listTasks({ limit: 500 });
+    expect(resOver.limit).toBe(100);
+
+    const resUnder = await listTasks({ limit: -10 });
+    expect(resUnder.limit).toBe(1);
+  });
+
   it('enforces uniqueness on idempotencyKey', async () => {
     ownerId = await getOwnerUserId();
     const key = `test-idempotency-${Date.now()}`;

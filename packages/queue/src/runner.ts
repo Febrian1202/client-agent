@@ -36,6 +36,7 @@ export async function runTask(options: RunTaskOptions): Promise<TaskExecutionRes
 
   const rawTaskId = task?.data?.taskId;
   if (!task || !task.id || !task.data || !rawTaskId) {
+    console.error(`[queue:runner] Invalid task payload or missing taskId for message ${task?.id ?? 'unknown'}`);
     if (task?.id) {
       await redis.xack(stream, group, task.id);
     }
@@ -44,12 +45,14 @@ export async function runTask(options: RunTaskOptions): Promise<TaskExecutionRes
 
   const taskId = Number(rawTaskId);
   if (Number.isNaN(taskId) || !Number.isInteger(taskId) || taskId <= 0) {
+    console.error(`[queue:runner] Invalid taskId '${rawTaskId}' for message ${task.id}`);
     await redis.xack(stream, group, task.id);
     return { status: 'skipped', reason: 'invalid_payload' };
   }
 
   const taskRow = await getTaskById(taskId);
   if (!taskRow) {
+    console.warn(`[queue:runner] Phantom task: taskId ${taskId} not found in database for message ${task.id}`);
     await redis.xack(stream, group, task.id);
     return { status: 'skipped', reason: 'not_found' };
   }

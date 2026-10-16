@@ -1,4 +1,4 @@
-import { describe, expect, it, afterAll } from 'bun:test';
+import { describe, expect, it, afterAll, spyOn } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import {
   db,
@@ -135,6 +135,7 @@ describe('Task Runner State Machine', () => {
   });
 
   it('safely ACKs and skips invalid stream payload without crashing (Review Focus #1)', async () => {
+    const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
     const result = await runTask({
       redis,
       stream: testStream,
@@ -145,9 +146,12 @@ describe('Task Runner State Machine', () => {
 
     expect(result.status).toBe('skipped');
     expect(result.reason).toBe('invalid_payload');
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it('safely ACKs and skips non-existent task ID in database (Review Focus #2)', async () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const result = await runTask({
       redis,
       stream: testStream,
@@ -158,6 +162,8 @@ describe('Task Runner State Machine', () => {
 
     expect(result.status).toBe('skipped');
     expect(result.reason).toBe('not_found');
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('safely ACKs and skips already completed tasks', async () => {
@@ -205,6 +211,7 @@ describe('Task Runner State Machine', () => {
   });
 
   it('safely ACKs and skips non-numeric taskId payload', async () => {
+    const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
     const result = await runTask({
       redis,
       stream: testStream,
@@ -215,5 +222,7 @@ describe('Task Runner State Machine', () => {
 
     expect(result.status).toBe('skipped');
     expect(result.reason).toBe('invalid_payload');
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

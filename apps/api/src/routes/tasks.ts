@@ -41,14 +41,17 @@ export function createTaskRoutes(deps?: TaskRoutesDeps) {
     .get(
       '/',
       async ({ query }) => {
-        const page = query.page ? parseInt(query.page, 10) : 1;
-        const limit = query.limit ? parseInt(query.limit, 10) : 20;
+        const rawPage = query.page ? parseInt(query.page, 10) : 1;
+        const rawLimit = query.limit ? parseInt(query.limit, 10) : 20;
+        const page = Math.max(1, Number.isNaN(rawPage) ? 1 : rawPage);
+        const parsedLimit = Number.isNaN(rawLimit) ? 20 : rawLimit;
+        const limit = Math.min(100, Math.max(1, parsedLimit));
         const status = query.status as TaskStatus | undefined;
         const type = query.type as TaskType | undefined;
 
         const result = await listTasks({
-          page: Number.isNaN(page) ? 1 : page,
-          limit: Number.isNaN(limit) ? 20 : limit,
+          page,
+          limit,
           status,
           type,
         });

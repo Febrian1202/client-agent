@@ -6,7 +6,6 @@ import {
   type ParsedTask,
   type Redis,
 } from '@client-agent/queue';
-import { getTaskById } from '@client-agent/db';
 import { formatHeartbeat } from './heartbeat';
 import { handleTask } from './taskHandler';
 
@@ -52,21 +51,13 @@ export async function startWorker(options: StartWorkerOptions): Promise<WorkerHa
       for (const task of recovered) {
         activeJobsCount++;
         try {
-          const rawTaskId = task.data?.taskId;
-          const taskId = rawTaskId ? Number(rawTaskId) : NaN;
-          const taskRow = !Number.isNaN(taskId) && taskId > 0 ? await getTaskById(taskId) : null;
-          if (taskRow) {
-            await runTask({
-              redis,
-              stream: consumer.stream,
-              group,
-              task,
-              handler: (t) => consumer.handler(t, redis),
-            });
-          } else {
-            await consumer.handler(task, redis);
-            await redis.xack(consumer.stream, group, task.id);
-          }
+          await runTask({
+            redis,
+            stream: consumer.stream,
+            group,
+            task,
+            handler: (t) => consumer.handler(t, redis),
+          });
         } catch (err) {
           console.error(`[worker] Error processing recovered task ${task.id}:`, err);
         } finally {
