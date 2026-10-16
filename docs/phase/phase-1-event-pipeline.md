@@ -215,5 +215,5 @@ Creator's Discord Channel
 - [x] VGen email parser correctly parses subject patterns and handles edge cases without throwing.
 - [x] Duplicate Gmail message IDs produce zero duplicate database records and zero duplicate notifications.
 - [x] Client record is automatically created or updated with `last_seen_at`.
-- [x] Discord bot delivers an embed notification for every new incoming message notification. *(Delivered as plain text with no embeds, per the approved plan.)*
+- [x] Discord bot delivers a plain-text notification for every new incoming message notification.
 - [x] Integration status endpoint accurately reports whether Gmail and Discord are configured.

@@ -12,9 +12,10 @@ working system that does something useful.
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation (Completed)
 
-> **Detailed Guide:** See [docs/phase/phase-0-foundation.md](phase/phase-0-foundation.md)
+> **Detailed Guide:** See [docs/phase/phase-0-foundation.md](phase/phase-0-foundation.md)  
+> **Status:** Completed
 
 **Goal:** A running monorepo with all infrastructure connected.
 
@@ -47,9 +48,10 @@ working system that does something useful.
 
 ---
 
-## Phase 1 — Event Pipeline
+## Phase 1 — Event Pipeline (Completed)
 
-> **Detailed Guide:** See [docs/phase/phase-1-event-pipeline.md](phase/phase-1-event-pipeline.md)
+> **Detailed Guide:** See [docs/phase/phase-1-event-pipeline.md](phase/phase-1-event-pipeline.md)  
+> **Status:** Completed (Merged to main)
 
 **Goal:** Gmail notification → parsed event → stored → Discord notification.
 
@@ -74,9 +76,10 @@ working system that does something useful.
 
 ---
 
-## Phase 2 — Worker System Hardening
+## Phase 2 — Worker System Hardening (Next Up)
 
-> **Detailed Guide:** See [docs/phase/phase-2-worker-hardening.md](phase/phase-2-worker-hardening.md)
+> **Detailed Guide:** See [docs/phase/phase-2-worker-hardening.md](phase/phase-2-worker-hardening.md)  
+> **Status:** Pending (Ready to implement)
 
 **Goal:** Reliable task processing with retries and failure handling.
 

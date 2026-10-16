@@ -18,6 +18,12 @@ ClientAgent is a personal automation and AI assistant built for a solo creator w
 
 This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions focused, lean, and reliable.
 
+### Current Implementation Status
+- **Phase 0 (Foundation):** COMPLETED (Monorepo, Bun workspaces, Elysia, SvelteKit, Drizzle, Redis, Docker).
+- **Phase 1 (Event Pipeline):** COMPLETED (Gmail Pub/Sub → VGen parser → PostgreSQL dedup → Redis Streams → Bun Worker → Discord REST notifications).
+- **Phase 2 (Worker Hardening):** NEXT UP (Task state machine, backoff retries, dead-letter recovery, graceful shutdown).
+- **Phase 3 – 8:** Pending subsequent phases.
+
 ---
 
 ## 2. Inviolable Core Constraints & Anti-Goals
@@ -98,9 +104,9 @@ Before implementing any feature, read the relevant specification in `docs/`:
   - `docs/adr/` — 12 Architecture Decision Records explaining why each choice was made.
 - **Implementation Guides (Step-by-Step):**
   - `docs/PHASES.md` — Phase overview & roadmap checklist.
-  - `docs/phase/phase-0-foundation.md` — Monorepo, Bun workspaces, Elysia, SvelteKit, Drizzle, Redis, Docker.
-  - `docs/phase/phase-1-event-pipeline.md` — Gmail Pub/Sub → parser → deduplication → Discord notification.
-  - `docs/phase/phase-2-worker-hardening.md` — State machine, backoff retries, dead-letter recovery, graceful shutdown.
+  - `docs/phase/phase-0-foundation.md` — **[COMPLETED]** Monorepo, Bun workspaces, Elysia, SvelteKit, Drizzle, Redis, Docker.
+  - `docs/phase/phase-1-event-pipeline.md` — **[COMPLETED]** Gmail Pub/Sub → parser → deduplication → Discord notification.
+  - `docs/phase/phase-2-worker-hardening.md` — **[NEXT UP]** State machine, backoff retries, dead-letter recovery, graceful shutdown.
   - `docs/phase/phase-3-vgen-reader.md` — Playwright session reuse, PlatformAdapter, VGen reader, `/read` command.
   - `docs/phase/phase-4-ai-agent.md` — LLM abstraction, tool calling, prompt layers, summarization, `/summarize` & `/reply`.
   - `docs/phase/phase-5-approval-system.md` — Draft state machine, approval invalidation, Discord interactive buttons.
@@ -134,12 +140,18 @@ bun --filter=@client-agent/worker dev   # Background Worker process
 # Run all unit tests across workspaces
 bun test
 
-# Run tests for a specific package
+# Run tests for specific packages or apps
 bun test packages/gmail
+bun test packages/discord
 bun test packages/db
+bun test apps/api
+bun test apps/worker
+
+# Run end-to-end event pipeline integration test
+bun test tests/e2e-event-pipeline.test.ts
 
 # Typecheck all packages
-bun run --filter='*' typecheck
+bun run typecheck
 ```
 
 ### Docker Strategy (ADR-012)
