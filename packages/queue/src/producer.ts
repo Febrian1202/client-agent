@@ -1,10 +1,12 @@
+import type Redis from 'ioredis';
 import { getRedisClient } from './connection';
 
 export async function publishTask(
   stream: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  client?: Redis
 ): Promise<string> {
-  const redis = getRedisClient();
+  const redis = client ?? getRedisClient();
   const flatArgs: string[] = [];
 
   for (const [key, value] of Object.entries(payload)) {
