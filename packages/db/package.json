@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@client-agent/config": "workspace:*",
+    "@client-agent/domain": "workspace:*",
     "@client-agent/shared": "workspace:*",
     "drizzle-orm": "^0.39.3",
     "postgres": "^3.4.5"
