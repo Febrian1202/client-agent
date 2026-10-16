@@ -15,6 +15,13 @@
       "when": 1792139219405,
       "tag": "0001_fantastic_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792156093083,
+      "tag": "0002_easy_xavin",
+      "breakpoints": true
     }
   ]
 }

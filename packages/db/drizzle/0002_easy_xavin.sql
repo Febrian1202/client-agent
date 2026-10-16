@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "agent_tasks_idempotency_key_idx" ON "agent_tasks" USING btree ("idempotency_key");
