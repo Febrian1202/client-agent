@@ -1,0 +1,10 @@
+FROM oven/bun:1.2-alpine AS base
+WORKDIR /app
+
+COPY package.json bun.lock tsconfig.json ./
+COPY packages/ ./packages/
+COPY apps/worker/ ./apps/worker/
+
+RUN bun install --frozen-lockfile --production
+
+CMD ["bun", "run", "apps/worker/src/index.ts"]
