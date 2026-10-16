@@ -19,21 +19,21 @@ working system that does something useful.
 **Goal:** A running monorepo with all infrastructure connected.
 
 ```
-[ ] Bun workspaces monorepo (root package.json, tsconfig)
-[ ] apps/api — Elysia with health endpoints
-[ ] apps/web — SvelteKit with Tailwind + shadcn-svelte + Lucide
-[ ] apps/worker — Bun process with heartbeat loop
-[ ] packages/db — Drizzle schema (users table), connection, migrations
-[ ] packages/domain — Base types and enums
-[ ] packages/queue — Redis Streams publish/consume abstraction
-[ ] packages/config — Env validation and loading
-[ ] packages/shared — Shared utilities
-[ ] Docker Compose (dev) — Postgres + Redis
-[ ] Docker Compose (prod) — Apps only, no Postgres/Redis
-[ ] Dockerfiles for api, web, worker
-[ ] Auth — login/logout/me endpoints, session in Redis
-[ ] Login page in SvelteKit
-[ ] Worker consumes a test stream and logs messages
+[x] Bun workspaces monorepo (root package.json, tsconfig)
+[x] apps/api — Elysia with health endpoints
+[x] apps/web — SvelteKit with Tailwind + shadcn-svelte + Lucide
+[x] apps/worker — Bun process with heartbeat loop
+[x] packages/db — Drizzle schema (users table), connection, migrations
+[x] packages/domain — Base types and enums
+[x] packages/queue — Redis Streams publish/consume abstraction
+[x] packages/config — Env validation and loading
+[x] packages/shared — Shared utilities
+[x] Docker Compose (dev) — Postgres + Redis
+[x] Docker Compose (prod) — Apps only, no Postgres/Redis
+[x] Dockerfiles for api, web, worker
+[x] Auth — login/logout/me endpoints, session in Redis
+[x] Login page in SvelteKit
+[x] Worker consumes a test stream and logs messages
 ```
 
 **Done when:**
