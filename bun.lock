@@ -57,6 +57,9 @@
         "@client-agent/queue": "workspace:*",
         "@client-agent/shared": "workspace:*",
       },
+      "devDependencies": {
+        "drizzle-orm": "^0.39.3",
+      },
     },
     "packages/config": {
       "name": "@client-agent/config",
