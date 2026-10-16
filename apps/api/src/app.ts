@@ -5,7 +5,9 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { authPlugin } from './auth/plugin';
 import { createGmailWebhookRoutes } from './routes/webhooks/gmail';
-import { resolveGmailClient } from './services/gmail';
+import { createIntegrationRoutes } from './routes/integrations';
+import { resolveGmailClient, verifyGmailRefreshToken } from './services/gmail';
+import { verifyDiscordChannel } from './services/discord';
 
 export const app = new Elysia()
   .use(
@@ -53,5 +55,11 @@ export const app = new Elysia()
     createGmailWebhookRoutes({
       resolveGmailClient,
       audience: config.GOOGLE_PUBSUB_AUDIENCE,
+    })
+  )
+  .use(
+    createIntegrationRoutes({
+      verifyGmailRefreshToken,
+      verifyDiscordChannel,
     })
   );

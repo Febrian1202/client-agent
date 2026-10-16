@@ -1,6 +1,6 @@
 import { config } from '@client-agent/config';
 import { getIntegration, getOwnerUserId } from '@client-agent/db';
-import { createGmailClient, type GmailClient } from '@client-agent/gmail';
+import { createGmailClient, type GmailClient, type GmailProfile } from '@client-agent/gmail';
 import { decryptSecret } from '@client-agent/shared';
 
 export class GoogleNotConfiguredError extends Error {
@@ -8,6 +8,19 @@ export class GoogleNotConfiguredError extends Error {
     super(message);
     this.name = 'GoogleNotConfiguredError';
   }
+}
+
+export async function verifyGmailRefreshToken(refreshToken: string): Promise<GmailProfile> {
+  const clientId = config.GOOGLE_CLIENT_ID;
+  const clientSecret = config.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new GoogleNotConfiguredError();
+  }
+
+  return createGmailClient({
+    credentials: { clientId, clientSecret, refreshToken },
+  }).getProfile();
 }
 
 export async function resolveGmailClient(): Promise<GmailClient | null> {
