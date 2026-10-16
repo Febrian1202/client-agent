@@ -240,7 +240,7 @@ describe('Phase 1 schema', () => {
     const userId = await ownerId();
     const inserted = await db.insert(agent_tasks).values({ userId, type: TaskType.PROCESS_GMAIL_EVENT, input: {} }).returning();
     createdIds.agentTasks.push(inserted[0]!.id);
-    expect(inserted[0]!.status).toBe('queued');
+    expect(inserted[0]!.status as string).toBe('queued');
     expect(inserted[0]!.attempts).toBe(0);
     expect(inserted[0]!.maxAttempts).toBe(5);
     expect(inserted[0]!.startedAt).toBeNull();
@@ -251,7 +251,7 @@ describe('Phase 1 schema', () => {
       source: 'schema-test', provider: 'vgen', eventType: VGenEventType.UNKNOWN, externalId: `schema-default-${Date.now()}`,
     }).returning();
     createdIds.events.push(inserted[0]!.id);
-    expect(inserted[0]!.status).toBe('received');
+    expect(inserted[0]!.status as string).toBe('received');
     expect(inserted[0]!.receivedAt).toBeInstanceOf(Date);
     expect(inserted[0]!.processedAt).toBeNull();
   });
@@ -354,22 +354,22 @@ describe('Phase 1 query helpers', () => {
     expect(first).not.toBeNull();
     expect(await insertEventIfNew(input)).toBeNull();
     await markEventProcessed(first!.id);
-    expect((await getEventById(first!.id))!.status).toBe('processed');
+    expect((await getEventById(first!.id))!.status as string).toBe('processed');
   });
 
   it('creates a task, finds it by idempotency key, and walks running -> completed', async () => {
     const userId = await getOwnerUserId();
     const task = await createTask({ userId, type: TaskType.PROCESS_GMAIL_EVENT, input: { eventId: 1 }, idempotencyKey: `queries:${externalId}` });
-    expect(task.status).toBe('queued');
+    expect(task.status as string).toBe('queued');
     expect((await findTaskByIdempotencyKey(`queries:${externalId}`))!.id).toBe(task.id);
     await markTaskRunning(task.id);
     const running = await getTaskById(task.id);
-    expect(running!.status).toBe('running');
+    expect(running!.status as string).toBe('running');
     expect(running!.attempts).toBe(1);
     expect(running!.startedAt).toBeInstanceOf(Date);
     await markTaskCompleted(task.id, { messageId: 'm1' });
     const done = await getTaskById(task.id);
-    expect(done!.status).toBe('completed');
+    expect(done!.status as string).toBe('completed');
     expect(done!.output).toEqual({ messageId: 'm1' });
   });
 
@@ -1162,7 +1162,7 @@ describe('PROCESS_GMAIL_EVENT handler', () => {
     expect(record.type).toBe(TaskType.NOTIFY_DISCORD);
     expect(record.taskId).toBe(String(notifyTasks[0]!.id));
 
-    expect((await getEventById(event.id))!.status).toBe('processed');
+    expect((await getEventById(event.id))!.status as string).toBe('processed');
     expect((await getTaskById(task.id))!.status).toBe(TaskStatus.COMPLETED);
   });
 
@@ -1526,13 +1526,14 @@ const gmail = {
   }),
 };
 
-const app = new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => gmail }));
+const app = new Elysia().use(createGmailWebhookRoutes({ resolveGmailClient: async () => gmail, audience: null }));
 const deliver = () => app.handle(new Request('http://localhost/api/v1/webhooks/google/gmail', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(push()),
 }));
 
 afterAll(async () => {
   for (const id of createdTaskIds) await db.delete(agentTasks).where(eq(agentTasks.id, id));
+  await db.delete(events).where(eq(events.externalId, externalId));
   await db.delete(clients).where(eq(clients.username, username));
   await redis.del(notificationsStream);
   await deleteIntegration(ownerId, 'gmail');
@@ -1572,7 +1573,7 @@ describe('Phase 1 event pipeline end to end', () => {
     expect((await db.select().from(clients).where(eq(clients.username, username)))[0]!.platform).toBe('vgen');
     expect((await db.select().from(agentTasks).where(eq(agentTasks.id, notifyTaskId)))[0]!.status).toBe(TaskStatus.COMPLETED);
     createdTaskIds.push(notifyTaskId);
-    expect((await db.select().from(events).where(eq(events.id, event.id)))[0]!.status).toBe('processed');
+    expect((await db.select().from(events).where(eq(events.id, event.id)))[0]!.status as string).toBe('processed');
     expect((await db.select().from(agentTasks).where(eq(agentTasks.id, processTasks[0]!.id)))[0]!.type).toBe(TaskType.PROCESS_GMAIL_EVENT);
   });
 });
