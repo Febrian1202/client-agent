@@ -1,0 +1,18 @@
+{
+  "name": "@client-agent/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@client-agent/config": "workspace:*",
+    "@client-agent/db": "workspace:*",
+    "@client-agent/domain": "workspace:*",
+    "@client-agent/queue": "workspace:*",
+    "@client-agent/shared": "workspace:*"
+  }
+}

@@ -18,6 +18,17 @@
         "elysia": "^1.2.25",
       },
     },
+    "apps/worker": {
+      "name": "@client-agent/worker",
+      "version": "0.1.0",
+      "dependencies": {
+        "@client-agent/config": "workspace:*",
+        "@client-agent/db": "workspace:*",
+        "@client-agent/domain": "workspace:*",
+        "@client-agent/queue": "workspace:*",
+        "@client-agent/shared": "workspace:*",
+      },
+    },
     "packages/config": {
       "name": "@client-agent/config",
       "version": "0.1.0",
@@ -69,6 +80,8 @@
     "@client-agent/queue": ["@client-agent/queue@workspace:packages/queue"],
 
     "@client-agent/shared": ["@client-agent/shared@workspace:packages/shared"],
+
+    "@client-agent/worker": ["@client-agent/worker@workspace:apps/worker"],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 
