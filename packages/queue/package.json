@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@client-agent/config": "workspace:*",
+    "@client-agent/db": "workspace:*",
+    "@client-agent/domain": "workspace:*",
     "ioredis": "^5.4.2"
   }
 }

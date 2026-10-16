@@ -3,4 +3,5 @@ export * from './connection';
 export * from './producer';
 export * from './consumer';
 export * from './retry';
+export * from './runner';
 export type { default as Redis } from 'ioredis';
