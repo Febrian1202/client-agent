@@ -122,7 +122,17 @@ export async function startWorker(options: StartWorkerOptions): Promise<WorkerHa
       await Bun.sleep(50);
     }
 
-    await Promise.allSettled(loops);
+    if (activeJobsCount > 0) {
+      console.warn(
+        `[worker] Shutdown timeout of ${timeoutMs}ms exceeded with ${activeJobsCount} active job(s) still in-flight`,
+      );
+    }
+
+    const elapsed = Date.now() - start;
+    const remainingMs = Math.max(0, timeoutMs - elapsed);
+    if (remainingMs > 0) {
+      await Promise.race([Promise.allSettled(loops), Bun.sleep(remainingMs)]);
+    }
   };
 
   return {

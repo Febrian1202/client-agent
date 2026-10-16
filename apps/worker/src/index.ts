@@ -29,7 +29,7 @@ const { shutdown } = await startWorker({
         if (!deps) {
           throw new Error('Discord integration is not configured');
         }
-        await handleNotifyDiscord(task, deps);
+        return await handleNotifyDiscord(task, deps);
       },
     },
   ],

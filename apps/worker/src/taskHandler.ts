@@ -29,7 +29,7 @@ export async function handleTask(options: HandleTaskOptions): Promise<boolean> {
     blockMs: 1000,
   });
 
-  if (!task) {
+  if (!task || isShuttingDown?.()) {
     return false;
   }
 
@@ -50,10 +50,14 @@ export async function handleTask(options: HandleTaskOptions): Promise<boolean> {
 
   try {
     await onProcess(task);
-    await redis.xack(stream, group, task.id);
+    if (!isShuttingDown?.()) {
+      await redis.xack(stream, group, task.id);
+    }
     return true;
   } catch (err) {
-    console.error(`[Worker] Error processing task ${task.id}:`, err);
+    if (!isShuttingDown?.()) {
+      console.error(`[Worker] Error processing task ${task.id}:`, err);
+    }
     return false;
   }
 }
