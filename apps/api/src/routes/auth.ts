@@ -2,16 +2,19 @@ import { Elysia, t } from 'elysia';
 import { config } from '@client-agent/config';
 import { verifyPassword } from '@client-agent/shared';
 import { db, users, eq } from '@client-agent/db';
-import { createSession, deleteSession, getSession } from '../auth/session';
+import { createSession, deleteSession } from '../auth/session';
+import { authPlugin } from '../auth/plugin';
 
 export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
+  .use(authPlugin)
   .post(
     '/login',
     async ({ body, cookie: { session }, set }) => {
       const { username, password } = body;
 
-      // 1. Verify single-user credentials
+      // Timing attack mitigation: verify against hash even if username does not match
       if (username !== config.AUTH_USERNAME) {
+        await verifyPassword(password, config.AUTH_PASSWORD_HASH);
         set.status = 401;
         return {
           error: {
@@ -32,7 +35,7 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
         };
       }
 
-      // 2. Fetch or create user record in PostgreSQL
+      // Fetch or create user record in PostgreSQL
       let userList = await db.select().from(users).where(eq(users.name, username));
       let user = userList[0];
       if (!user) {
@@ -46,11 +49,11 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
         user = inserted[0];
       }
 
-      // 3. Create session in Redis
+      // Create session in Redis
       const sessionId = await createSession(user!.id, username);
 
-      // 4. Set HTTP-Only Cookie
-      session.set({
+      // Set HTTP-Only Cookie
+      session?.set({
         value: sessionId,
         httpOnly: true,
         sameSite: 'strict',
@@ -69,59 +72,46 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
     },
     {
       body: t.Object({
-        username: t.String(),
-        password: t.String(),
+        username: t.String({ minLength: 1 }),
+        password: t.String({ minLength: 1 }),
       }),
     }
   )
   .post('/logout', async ({ cookie: { session } }) => {
-    if (session.value) {
-      await deleteSession(session.value);
-      session.remove();
+    const sessionId = typeof session?.value === 'string' ? session.value : '';
+    if (sessionId) {
+      await deleteSession(sessionId);
+      session?.remove();
     }
     return { ok: true };
   })
-  .get('/me', async ({ cookie: { session }, set }) => {
-    if (!session.value) {
-      set.status = 401;
+  .get(
+    '/me',
+    ({ currentUser }) => {
       return {
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'No active session',
+        user: {
+          id: currentUser!.id,
+          name: currentUser!.name,
+          email: currentUser!.email,
         },
       };
+    },
+    {
+      isAuth: true,
     }
-
-    const sessionData = await getSession(session.value);
-    if (!sessionData) {
-      session.remove();
-      set.status = 401;
+  )
+  .get(
+    '/protected-test',
+    ({ currentUser }) => {
       return {
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Session expired or invalid',
+        message: 'Protected resource accessed',
+        user: {
+          id: currentUser!.id,
+          name: currentUser!.name,
         },
       };
+    },
+    {
+      isAuth: true,
     }
-
-    const userList = await db.select().from(users).where(eq(users.id, sessionData.userId));
-    const user = userList[0];
-
-    if (!user) {
-      set.status = 401;
-      return {
-        error: {
-          code: 'USER_NOT_FOUND',
-          message: 'User no longer exists',
-        },
-      };
-    }
-
-    return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    };
-  });
+  );

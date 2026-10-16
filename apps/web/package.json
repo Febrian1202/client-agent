@@ -22,10 +22,6 @@
 		"typescript": "^6.0.3",
 		"vite": "^8.3.0"
 	},
-	"imports": {
-		"#lib": "./src/lib/index.js",
-		"#lib/*": "./src/lib/*"
-	},
 	"dependencies": {
 		"@sveltejs/adapter-node": "^6.0.0",
 		"clsx": "^2.1.1",

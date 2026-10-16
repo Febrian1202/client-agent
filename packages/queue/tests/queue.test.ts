@@ -44,7 +44,7 @@ describe('Redis Streams Producer and Consumer', () => {
     expect(result).toBeDefined();
     expect(result?.length).toBeGreaterThan(0);
 
-    const streamEntries = result![0]![1];
+    const streamEntries = (result as [string, [string, string[]][]][])[0]![1];
     expect(streamEntries.length).toBe(1);
     const [id, fields] = streamEntries[0]!;
     expect(id).toBe(entryId);

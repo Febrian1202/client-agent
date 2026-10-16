@@ -7,11 +7,11 @@ export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit({
-			compilerOptions: {
-				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-			},
-			adapter: adapter()
+			adapter: adapter(),
+			alias: {
+				$lib: './src/lib',
+				'$lib/*': './src/lib/*'
+			}
 		})
 	],
 	server: {

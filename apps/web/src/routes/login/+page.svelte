@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { api } from '#lib/api';
+	import { api } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { Lock, User, AlertCircle, ArrowRight } from 'lucide-svelte';
 

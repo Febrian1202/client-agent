@@ -1,5 +1,4 @@
-import type Redis from 'ioredis';
-import { consumeNextTask, type ParsedTask } from '@client-agent/queue';
+import { consumeNextTask, type ParsedTask, type Redis } from '@client-agent/queue';
 
 export interface HandleTaskOptions {
   stream: string;

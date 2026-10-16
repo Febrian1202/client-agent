@@ -20,8 +20,8 @@ export class ApiClient {
   private fetchFn: typeof fetch;
 
   constructor(options?: ApiClientOptions) {
-    this.baseUrl = options?.baseUrl || '';
-    this.fetchFn = options?.fetch || globalThis.fetch;
+    this.baseUrl = options?.baseUrl ?? '';
+    this.fetchFn = options?.fetch ?? globalThis.fetch;
   }
 
   async getHealth(): Promise<HealthStatus> {
@@ -47,14 +47,23 @@ export class ApiClient {
       credentials: 'include',
     });
 
-    const data = await res.json();
+    let data: { user?: UserProfile; error?: { message?: string } } | null = null;
+    try {
+      data = (await res.json()) as { user?: UserProfile; error?: { message?: string } };
+    } catch {
+      data = null;
+    }
 
     if (!res.ok) {
       const message = data?.error?.message || `Login failed with status ${res.status}`;
       throw new Error(message);
     }
 
-    return data.user as UserProfile;
+    if (!data?.user) {
+      throw new Error('Malformed login response: user data missing');
+    }
+
+    return data.user;
   }
 
   async getMe(): Promise<UserProfile | null> {
@@ -63,16 +72,16 @@ export class ApiClient {
       credentials: 'include',
     });
 
-    if (res.status === 401) {
+    if (res.status === 401 || !res.ok) {
       return null;
     }
 
-    if (!res.ok) {
+    try {
+      const data = (await res.json()) as { user?: UserProfile };
+      return data?.user || null;
+    } catch {
       return null;
     }
-
-    const data = await res.json();
-    return (data.user as UserProfile) || null;
   }
 
   async logout(): Promise<void> {

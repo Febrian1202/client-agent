@@ -3,7 +3,8 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["bun", "node"],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -26,5 +27,17 @@
       "@client-agent/queue/*": ["packages/queue/src/*"]
     }
   },
-  "exclude": ["node_modules", "dist", "build", ".svelte-kit"]
+  "include": [
+    "apps/api/**/*",
+    "apps/worker/**/*",
+    "packages/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "apps/web",
+    "dist",
+    "build",
+    ".svelte-kit"
+  ]
 }

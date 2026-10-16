@@ -2,6 +2,7 @@ import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
+import { authPlugin } from './auth/plugin';
 
 export const app = new Elysia()
   .use(
@@ -10,5 +11,38 @@ export const app = new Elysia()
       credentials: true,
     })
   )
+  .onError(({ code, error, set }) => {
+    if (code === 'VALIDATION') {
+      set.status = 422;
+      return {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'message' in error && typeof error.message === 'string' ? error.message : 'Validation failed',
+          details: 'validator' in error ? error.validator : undefined,
+        },
+      };
+    }
+    if (code === 'NOT_FOUND') {
+      set.status = 404;
+      return {
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Endpoint not found',
+        },
+      };
+    }
+    set.status = 500;
+    const errorMessage =
+      'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'An unexpected error occurred';
+    return {
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: errorMessage,
+      },
+    };
+  })
+  .use(authPlugin)
   .use(healthRoutes)
   .use(authRoutes);

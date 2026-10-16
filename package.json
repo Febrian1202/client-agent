@@ -10,8 +10,12 @@
     "dev:web": "bun --filter=@client-agent/web dev",
     "dev:worker": "bun --filter=@client-agent/worker dev",
     "dev": "bun --filter='*' dev",
-    "build": "bun --filter='*' build",
-    "lint": "bun --filter='*' lint",
+    "build": "bun --filter='*' run build",
+    "typecheck": "tsc --noEmit && bun run --filter=@client-agent/web check",
     "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "@types/node": "^26.6.5"
   }
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { api, type HealthStatus, type UserProfile } from '#lib/api';
+	import { api, type HealthStatus, type UserProfile } from '$lib/api';
 	import { Server, Database, LogOut, CheckCircle2, AlertTriangle, Layers, Activity } from 'lucide-svelte';
 
 	let user = $state<UserProfile | null>(null);
@@ -107,7 +107,7 @@
 						<span class="text-lg font-semibold text-white">Disconnected</span>
 					{/if}
 				</div>
-				<p class="text-xs text-zinc-500 mt-2">Port 5433 / Drizzle migrations applied</p>
+				<p class="text-xs text-zinc-500 mt-2">PostgreSQL Connected / Migrations applied</p>
 			</div>
 
 			<!-- Redis Streams Card -->
@@ -125,7 +125,7 @@
 						<span class="text-lg font-semibold text-white">Disconnected</span>
 					{/if}
 				</div>
-				<p class="text-xs text-zinc-500 mt-2">Port 6380 / Stream Consumer active</p>
+				<p class="text-xs text-zinc-500 mt-2">Redis Active / Stream Consumer listening</p>
 			</div>
 		</div>
 

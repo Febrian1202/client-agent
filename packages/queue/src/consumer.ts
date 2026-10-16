@@ -1,4 +1,4 @@
-import type Redis from 'ioredis';
+import type { Redis } from './index';
 import { getRedisClient } from './connection';
 
 export async function createConsumerGroupIfNotExists(
@@ -8,8 +8,8 @@ export async function createConsumerGroupIfNotExists(
 ): Promise<void> {
   const redis = redisClient ?? getRedisClient();
   try {
-    // MKSTREAM option creates stream automatically if it doesn't exist
-    await redis.xgroup('CREATE', stream, group, '$', 'MKSTREAM');
+    // Start from '0' so pre-existing stream messages are not missed
+    await redis.xgroup('CREATE', stream, group, '0', 'MKSTREAM');
   } catch (err: unknown) {
     const message = (err as Error)?.message || '';
     if (!message.includes('BUSYGROUP')) {
@@ -35,20 +35,22 @@ export async function consumeNextTask(
   redis: Redis,
   options: ConsumeOptions
 ): Promise<ParsedTask | null> {
-  const { stream, group, consumer, blockMs = 2000 } = options;
+  const { stream, group, consumer, batchSize = 1, blockMs = 2000 } = options;
 
-  const result = await redis.xreadgroup(
+  const rawResult = await redis.xreadgroup(
     'GROUP',
     group,
     consumer,
     'COUNT',
-    1,
+    batchSize,
     'BLOCK',
     blockMs,
     'STREAMS',
     stream,
     '>'
   );
+
+  const result = rawResult as [string, [string, string[]][]][] | null;
 
   if (!result || result.length === 0) {
     return null;

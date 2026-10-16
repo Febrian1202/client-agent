@@ -98,4 +98,27 @@ describe('Elysia API Server Endpoints', () => {
     );
     expect(postLogoutMe.status).toBe(401);
   });
+
+  it('rejects unauthenticated requests to protected routes with 401', async () => {
+    const res = await app.handle(new Request('http://localhost/api/v1/auth/protected-test'));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('formats schema validation errors into standard ApiErrorResponse envelope', async () => {
+    const res = await app.handle(
+      new Request('http://localhost/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}), // Missing username & password
+      })
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toBeDefined();
+  });
 });
