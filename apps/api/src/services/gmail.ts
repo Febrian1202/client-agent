@@ -35,11 +35,13 @@ export async function resolveGmailClient(): Promise<GmailClient | null> {
     await decryptSecret(integration.credentialsEncrypted, config.AUTH_SECRET),
   ) as { refreshToken: string };
 
+  const clientId = config.GOOGLE_CLIENT_ID;
+  const clientSecret = config.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
   return createGmailClient({
-    credentials: {
-      refreshToken,
-      clientId: config.GOOGLE_CLIENT_ID!,
-      clientSecret: config.GOOGLE_CLIENT_SECRET!,
-    },
+    credentials: { refreshToken, clientId, clientSecret },
   });
 }

@@ -51,6 +51,8 @@ export async function handleProcessGmailEvent(
       });
     }
 
+    // Invariant: at most one NOTIFY_DISCORD task per event.
+    // Check-then-create assumes Phase 1's single worker process; a DB-level guard is Phase 2 work.
     const notifyIdempotencyKey = `gmail_event:${event.id}:notify`;
     const existingNotifyTask = await findTaskByIdempotencyKey(notifyIdempotencyKey);
     const notifyTask =

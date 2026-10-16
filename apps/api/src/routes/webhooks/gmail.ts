@@ -109,25 +109,26 @@ export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
         return { ok: false as const, reason: 'gmail_api_error' as const };
       };
 
-      const bootstrap = async () => {
-        const profile = await client.getProfile();
+      const bootstrapSafely = async () => {
+        let profile;
+        try {
+          profile = await client.getProfile();
+        } catch (error) {
+          if (error instanceof GmailApiError) {
+            return markIntegrationError();
+          }
+          console.warn(
+            `[gmail-webhook] failed to load the Gmail profile: ${error instanceof Error ? error.message : 'unknown error'}`,
+          );
+          return { ok: false as const, reason: 'gmail_api_error' as const };
+        }
+
         await persistIntegration({
           ...metadata,
           emailAddress: profile.emailAddress,
           lastHistoryId: profile.historyId,
         });
         return { ok: true as const, bootstrapped: true as const };
-      };
-
-      const bootstrapSafely = async () => {
-        try {
-          return await bootstrap();
-        } catch (error) {
-          if (error instanceof GmailApiError) {
-            return markIntegrationError();
-          }
-          throw error;
-        }
       };
 
       const processMessages = async (messageIds: string[], historyId: string) => {
@@ -144,7 +145,10 @@ export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
               );
               continue;
             }
-            throw error;
+            console.warn(
+              `[gmail-webhook] transient failure fetching message ${messageId}: ${error instanceof Error ? error.message : 'unknown error'}`,
+            );
+            return { inserted, complete: false as const };
           }
 
           if (!parsed) {
@@ -185,7 +189,7 @@ export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
           inserted += 1;
         }
 
-        return inserted;
+        return { inserted, complete: true as const };
       };
 
       if (!storedHistoryId) {
@@ -202,11 +206,16 @@ export function createGmailWebhookRoutes(deps: GmailWebhookDeps) {
         if (error instanceof GmailApiError) {
           return markIntegrationError();
         }
-        throw error;
+        console.warn(
+          `[gmail-webhook] gmail history lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
+        return { ok: false, reason: 'gmail_api_error' };
       }
 
-      const inserted = await processMessages(history.messageIds, push.historyId);
-      await persistIntegration({ ...metadata, lastHistoryId: push.historyId });
+      const { inserted, complete } = await processMessages(history.messageIds, push.historyId);
+      if (complete) {
+        await persistIntegration({ ...metadata, lastHistoryId: push.historyId });
+      }
 
       return { ok: true, events: inserted };
     }

@@ -27,6 +27,13 @@ async function signToken(claims: Record<string, unknown>) {
   return `${header}.${payload}.${Buffer.from(signature).toString('base64url')}`;
 }
 
+async function signTokenWithHeader(header: Record<string, unknown>, claims: Record<string, unknown>) {
+  const encodedHeader = b64url(header);
+  const encodedPayload = b64url(claims);
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`));
+  return `${encodedHeader}.${encodedPayload}.${Buffer.from(signature).toString('base64url')}`;
+}
+
 const claims = () => ({ iss: 'https://accounts.google.com', aud: audience, exp: Math.floor(Date.now() / 1000) + 600, iat: Math.floor(Date.now() / 1000), email: 'pubsub@project.iam.gserviceaccount.com' });
 
 describe('Pub/Sub push handling', () => {
@@ -64,5 +71,33 @@ describe('Pub/Sub push handling', () => {
     const parts = token.split('.');
     const token2 = `${parts[0]}.${parts[1]}.${Buffer.from('forged').toString('base64url')}`;
     await expect(verifyPubSubPushToken({ token: token2, audience, fetchImpl: jwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
+  });
+
+  it('rejects a token that is not signed with RS256', async () => {
+    const token = await signToken(claims());
+    const [, payload, signature] = token.split('.');
+    const algHeader = b64url({ alg: 'HS256', kid: 'test-kid', typ: 'JWT' });
+    await expect(verifyPubSubPushToken({ token: `${algHeader}.${payload}.${signature}`, audience, fetchImpl: jwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
+  });
+
+  it('rejects a token signed with an unknown key id', async () => {
+    const token = await signTokenWithHeader({ alg: 'RS256', kid: 'other-kid', typ: 'JWT' }, claims());
+    await expect(verifyPubSubPushToken({ token, audience, fetchImpl: jwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
+  });
+
+  it('rejects a token whose issuer is not Google', async () => {
+    const token = await signToken({ ...claims(), iss: 'https://evil.example.com' });
+    await expect(verifyPubSubPushToken({ token, audience, fetchImpl: jwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
+  });
+
+  it('rejects a token issued beyond the clock tolerance', async () => {
+    const token = await signToken({ ...claims(), iat: Math.floor(Date.now() / 1000) + 3600 });
+    await expect(verifyPubSubPushToken({ token, audience, fetchImpl: jwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
+  });
+
+  it('rejects when the JWKS endpoint answers with an error status', async () => {
+    const token = await signToken(claims());
+    const failingJwksFetch = (async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('unavailable', { status: 503 })) as typeof fetch;
+    await expect(verifyPubSubPushToken({ token, audience, fetchImpl: failingJwksFetch })).rejects.toBeInstanceOf(PubSubAuthError);
   });
 });

@@ -143,16 +143,16 @@ Creator's Discord Channel
   - Read `DISCORD_BOT_TOKEN`, `DISCORD_APPLICATION_ID`, `DISCORD_GUILD_ID` from config.
   - Connect bot on worker startup or standalone dispatcher.
 - [x] Implement notification formatter (`src/notifications.ts`):
-  - Function `sendEventNotification(channelId: string, event: VGenParsedEvent): Promise<string>`
+  - Function `sendEventNotification(channelId: string, notification: DiscordEventNotification): Promise<{ messageId: string }>`
   - Embed / message format:
     ```text
     🔔 New VGen Message
+
     Client: @ErianOsamu
     Event: New Message
     Received: 2026-10-16 14:32 UTC
 
     The notification email does not contain the conversation content.
-    [Read Conversation]
     ```
 
 ---
@@ -206,7 +206,7 @@ Creator's Discord Channel
 3. **Verify Worker & Discord Notification:**
    - Watch `apps/worker` logs.
    - Verify task `PROCESS_GMAIL_EVENT` transitions from `queued` → `running` → `completed`.
-   - Verify task `NOTIFY_DISCORD` runs and Discord bot posts the embed in the creator's Discord channel.
+   - Verify task `NOTIFY_DISCORD` runs and Discord bot posts the plain-text notification in the creator's Discord channel.
 
 ---
 

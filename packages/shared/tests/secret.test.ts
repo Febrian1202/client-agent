@@ -28,4 +28,8 @@ describe('secret encryption', () => {
     const sealed = await encryptSecret('sensitive', secret);
     expect(decryptSecret(sealed, 'other_secret')).rejects.toThrow();
   });
+
+  it('rejects an unsupported envelope version', async () => {
+    expect(decryptSecret('v2.iv.ciphertext', secret)).rejects.toThrow('Unsupported secret format');
+  });
 });

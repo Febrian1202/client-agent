@@ -2,7 +2,7 @@ import { describe, expect, it, afterAll } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import {
   db, events, agentTasks, clients, getOwnerUserId,
-  insertEventIfNew, createTask, getTaskById, getEventById,
+  insertEventIfNew, createTask, getTaskById, getEventById, markTaskCompleted,
 } from '@client-agent/db';
 import { TaskStatus, TaskType, VGenEventType } from '@client-agent/domain';
 import { STREAMS, createRedisClient } from '@client-agent/queue';
@@ -97,5 +97,35 @@ describe('PROCESS_GMAIL_EVENT handler', () => {
     const row = await getTaskById(task.id);
     expect(row!.status).toBe(TaskStatus.FAILED);
     expect(row!.error).toBeTruthy();
+  });
+
+  it('does not publish to notifications stream when existing notify task is already completed', async () => {
+    const { event, task } = await seed();
+    await handleProcessGmailEvent({ id: '3-0', data: { taskId: String(task.id) } }, { notificationsStream });
+
+    const notifyKey = `gmail_event:${event.id}:notify`;
+    const notifyTasks = await db.select().from(agentTasks).where(eq(agentTasks.idempotencyKey, notifyKey));
+    expect(notifyTasks).toHaveLength(1);
+    const notifyTask = notifyTasks[0]!;
+    createdTaskIds.push(notifyTask.id);
+
+    await markTaskCompleted(notifyTask.id, { messageId: 'msg-already-sent' });
+
+    const before = (await redis.xrange(notificationsStream, '-', '+')).length;
+
+    const secondProcess = await createTask({
+      userId: ownerId,
+      eventId: event.id,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { eventId: event.id },
+      idempotencyKey: `gmail_event:${event.id}:process:third`,
+    });
+    createdTaskIds.push(secondProcess.id);
+    await handleProcessGmailEvent({ id: '3-1', data: { taskId: String(secondProcess.id) } }, { notificationsStream });
+
+    expect((await redis.xrange(notificationsStream, '-', '+'))).toHaveLength(before);
+
+    const notifyTasksAfter = await db.select().from(agentTasks).where(eq(agentTasks.idempotencyKey, notifyKey));
+    expect(notifyTasksAfter).toHaveLength(1);
   });
 });

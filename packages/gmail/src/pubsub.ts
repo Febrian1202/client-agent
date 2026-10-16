@@ -129,7 +129,7 @@ async function resolveJwksKeys(options: {
   const document = (await response.json()) as JwksDocument;
   const keys = Array.isArray(document.keys) ? document.keys : [];
 
-  if (options.useCache) {
+  if (options.useCache && keys.length > 0) {
     jwksCache.set(options.jwksUrl, { expiresAt: options.now() + JWKS_CACHE_TTL_SECONDS, keys });
   }
 

@@ -43,7 +43,6 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(agentTasks).where(eq(agentTasks.idempotencyKey, `gmail_event:${externalId}:process`));
   await db.delete(events).where(eq(events.externalId, externalId));
   await deleteIntegration(ownerId, 'gmail');
   await redis.del(eventsStream);
@@ -90,6 +89,27 @@ describe('POST /api/v1/webhooks/google/gmail', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: false, reason: 'gmail_api_error' });
     expect((await db.select().from(integrations).where(eq(integrations.provider, 'gmail')))[0]!.status).toBe('error');
+  });
+
+  it('answers 200 and keeps the integration connected on a transient Gmail failure', async () => {
+    await upsertIntegration({ userId: ownerId, provider: 'gmail', status: 'connected', metadata: { lastHistoryId: historyId } });
+    const client = fakeClient({ listHistory: async () => { throw new Error('socket hang up'); } });
+    const res = await post(appWith(client), pushBody(historyId));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: false, reason: 'gmail_api_error' });
+    const integration = (await db.select().from(integrations).where(eq(integrations.provider, 'gmail')))[0]!;
+    expect(integration.status).toBe('connected');
+  });
+
+  it('does not advance the history id when a message fetch fails transiently', async () => {
+    await upsertIntegration({ userId: ownerId, provider: 'gmail', status: 'connected', metadata: { lastHistoryId: '4000' } });
+    const client = fakeClient({ fetchMessageById: async () => { throw new Error('socket hang up'); } });
+    const res = await post(appWith(client), pushBody(historyId));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, events: 0 });
+    expect(await db.select().from(events).where(eq(events.externalId, externalId))).toHaveLength(0);
+    const integration = (await db.select().from(integrations).where(eq(integrations.provider, 'gmail')))[0]!;
+    expect((integration.metadata as Record<string, unknown>).lastHistoryId).toBe('4000');
   });
 
   it('reports gmail_not_connected instead of failing when no integration exists', async () => {
