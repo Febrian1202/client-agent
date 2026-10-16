@@ -1616,7 +1616,8 @@ curl -i -X POST http://localhost:3001/api/v1/integrations/discord \
   -d '{"channelId":"<discord channel id>"}'
 curl -i http://localhost:3001/api/v1/integrations -H 'Cookie: session=<session>'
 
-# 4. Simulate a Pub/Sub push (dev has no GOOGLE_PUBSUB_AUDIENCE, so verification is skipped)
+# 4. Simulate a Pub/Sub push (verification is skipped only when GOOGLE_PUBSUB_AUDIENCE is unset;
+#    to simulate locally, either unset it in .env or send a valid OIDC Authorization: Bearer <token>)
 DATA=$(printf '{"emailAddress":"me@example.com","historyId":"12345"}' | base64 -w0)
 curl -i -X POST http://localhost:3001/api/v1/webhooks/google/gmail \
   -H 'Content-Type: application/json' -d "{\"message\":{\"data\":\"$DATA\"}}"

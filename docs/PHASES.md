@@ -54,15 +54,15 @@ working system that does something useful.
 **Goal:** Gmail notification → parsed event → stored → Discord notification.
 
 ```
-[ ] packages/gmail — Gmail API client, OAuth flow
-[ ] Gmail Pub/Sub webhook endpoint
-[ ] VGen email parser (subject line patterns → event types)
-[ ] Event model in database
-[ ] Event deduplication via external_id uniqueness
-[ ] PROCESS_GMAIL_EVENT task type
-[ ] packages/discord — Discord bot, notification sending
-[ ] Worker handler: process event → send Discord notification
-[ ] Integration settings endpoints
+[x] packages/gmail — Gmail API client, OAuth flow
+[x] Gmail Pub/Sub webhook endpoint
+[x] VGen email parser (subject line patterns → event types)
+[x] Event model in database
+[x] Event deduplication via external_id uniqueness
+[x] PROCESS_GMAIL_EVENT task type
+[x] packages/discord — Discord bot, notification sending
+[x] Worker handler: process event → send Discord notification
+[x] Integration settings endpoints
 ```
 
 **Done when:**

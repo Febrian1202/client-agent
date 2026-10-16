@@ -42,7 +42,7 @@ Creator's Discord Channel
 ## Atomic Task Breakdown
 
 ### Task 1.1: Database Schemas for Events, Clients, and Tasks
-- [ ] In `packages/db/src/schema/events.ts`, define `events` table:
+- [x] In `packages/db/src/schema/events.ts`, define `events` table:
   - `id`: `bigserial` primary key
   - `source`: `text` (e.g. `'gmail'`)
   - `provider`: `text` (e.g. `'vgen'`)
@@ -52,7 +52,7 @@ Creator's Discord Channel
   - `status`: `text` (`received`, `processed`, `failed`)
   - `received_at`, `processed_at`: `timestamp with time zone`
   - `created_at`, `updated_at`: `timestamp with time zone` default `now()`
-- [ ] In `packages/db/src/schema/clients.ts`, define `clients` table:
+- [x] In `packages/db/src/schema/clients.ts`, define `clients` table:
   - `id`: `bigserial` primary key
   - `user_id`: `bigint` references `users(id)`
   - `platform`: `text` default `'vgen'`
@@ -65,7 +65,7 @@ Creator's Discord Channel
   - `first_seen_at`, `last_seen_at`: `timestamp with time zone`
   - `created_at`, `updated_at`: `timestamp with time zone`
   - Unique constraint: `UNIQUE(user_id, platform, username)`
-- [ ] In `packages/db/src/schema/agent_tasks.ts`, define `agent_tasks` table:
+- [x] In `packages/db/src/schema/agent_tasks.ts`, define `agent_tasks` table:
   - `id`: `bigserial` primary key
   - `user_id`: `bigint` references `users(id)`
   - `event_id`: `bigint` references `events(id)` nullable
@@ -78,7 +78,7 @@ Creator's Discord Channel
   - `idempotency_key`: `text` nullable
   - `error`: `text` nullable
   - `started_at`, `completed_at`, `created_at`, `updated_at`: `timestamp with time zone`
-- [ ] In `packages/db/src/schema/integrations.ts`, define `integrations` table:
+- [x] In `packages/db/src/schema/integrations.ts`, define `integrations` table:
   - `id`: `bigserial` primary key
   - `user_id`: `bigint` references `users(id)`
   - `provider`: `text` (`gmail`, `discord`)
@@ -86,18 +86,18 @@ Creator's Discord Channel
   - `credentials_encrypted`: `text` nullable
   - `metadata`: `jsonb` default `{}`
   - `created_at`, `updated_at`: `timestamp with time zone`
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 1.2: `packages/gmail` (Gmail Client & VGen Email Parser)
-- [ ] Create `packages/gmail/package.json` (name: `@client-agent/gmail`).
-- [ ] Implement OAuth credential manager (`src/auth.ts`) using Google APIs (`googleapis` or direct REST fetch).
+- [x] Create `packages/gmail/package.json` (name: `@client-agent/gmail`).
+- [x] Implement OAuth credential manager (`src/auth.ts`) using Google APIs (`googleapis` or direct REST fetch). *(Built as a single `src/client.ts` together with the message fetcher, per the approved plan.)*
   - Store tokens, refresh tokens, and auto-refresh logic.
-- [ ] Implement Gmail message fetcher (`src/messages.ts`):
+- [x] Implement Gmail message fetcher (`src/messages.ts`): *(Built in the same single `src/client.ts`, per the approved plan.)*
   - Function `fetchMessageById(messageId: string): Promise<GmailMessage>`
   - Function `listHistory(startHistoryId: string): Promise<string[]>`
-- [ ] Implement VGen Parser (`src/parser.ts`):
+- [x] Implement VGen Parser (`src/parser.ts`):
   - Identify if email sender is VGen (`no-reply@vgen.co` or similar).
   - Parse subject line patterns:
     - `"@(\w+) sent you a new message!"` → `eventType: NEW_MESSAGE`, `clientUsername: match[1]`
@@ -115,12 +115,12 @@ Creator's Discord Channel
       receivedAt: Date;
     }
     ```
-- [ ] Write unit tests for the parser using mock email subject lines and headers (`bun test packages/gmail`).
+- [x] Write unit tests for the parser using mock email subject lines and headers (`bun test packages/gmail`).
 
 ---
 
 ### Task 1.3: Gmail Webhook Endpoint in `apps/api`
-- [ ] Create `apps/api/src/routes/webhooks/gmail.ts`:
+- [x] Create `apps/api/src/routes/webhooks/gmail.ts`:
   - Route: `POST /api/v1/webhooks/google/gmail`
   - Skip session authentication for this route.
   - Verify Google Cloud Pub/Sub message format (`message.data` base64 decoded).
@@ -133,16 +133,16 @@ Creator's Discord Channel
        - Create an `agent_tasks` record with type `PROCESS_GMAIL_EVENT`.
        - Publish task to Redis Stream `client-agent:events`.
   - Return HTTP 200/204 to acknowledge Pub/Sub promptly.
-- [ ] Mount route in `apps/api/src/index.ts`.
+- [x] Mount route in `apps/api/src/index.ts`. *(Mounted in `apps/api/src/app.ts`, per the approved plan.)*
 
 ---
 
 ### Task 1.4: `packages/discord` (Discord Bot & Notification Dispatcher)
-- [ ] Create `packages/discord/package.json` (name: `@client-agent/discord`) with `discord.js`.
-- [ ] Initialize Discord bot client (`src/client.ts`):
+- [x] Create `packages/discord/package.json` (name: `@client-agent/discord`) with `discord.js`.
+- [x] Initialize Discord bot client (`src/client.ts`):
   - Read `DISCORD_BOT_TOKEN`, `DISCORD_APPLICATION_ID`, `DISCORD_GUILD_ID` from config.
   - Connect bot on worker startup or standalone dispatcher.
-- [ ] Implement notification formatter (`src/notifications.ts`):
+- [x] Implement notification formatter (`src/notifications.ts`):
   - Function `sendEventNotification(channelId: string, event: VGenParsedEvent): Promise<string>`
   - Embed / message format:
     ```text
@@ -158,7 +158,7 @@ Creator's Discord Channel
 ---
 
 ### Task 1.5: Worker Task Handlers in `apps/worker`
-- [ ] In `apps/worker/src/handlers/processGmailEvent.ts`:
+- [x] In `apps/worker/src/handlers/processGmailEvent.ts`:
   - Input: `{ eventId: number }`
   - Fetch event record from `events` table.
   - If event has `clientUsername`:
@@ -167,16 +167,16 @@ Creator's Discord Channel
   - Create `agent_tasks` entry of type `NOTIFY_DISCORD`.
   - Enqueue task to Redis Stream `client-agent:notifications`.
   - Mark `events.status = 'processed'`.
-- [ ] In `apps/worker/src/handlers/notifyDiscord.ts`:
+- [x] In `apps/worker/src/handlers/notifyDiscord.ts`:
   - Consume from `client-agent:notifications`.
   - Call `@client-agent/discord` to deliver message to configured creator channel.
   - Mark task as `completed` with timestamp.
-- [ ] Register both stream consumers in worker initialization loop.
+- [x] Register both stream consumers in worker initialization loop.
 
 ---
 
 ### Task 1.6: Integration Management API
-- [ ] In `apps/api/src/routes/integrations.ts`:
+- [x] In `apps/api/src/routes/integrations.ts`:
   - `GET /api/v1/integrations` — Return connection status of Gmail and Discord.
   - `POST /api/v1/integrations/gmail` — Save or initiate Gmail OAuth credentials.
   - `DELETE /api/v1/integrations/gmail` — Clear Gmail credentials.
@@ -211,9 +211,9 @@ Creator's Discord Channel
 ---
 
 ## Done When Checklist
-- [ ] Database schema includes `events`, `clients`, `agent_tasks`, and `integrations` with migrations executed.
-- [ ] VGen email parser correctly parses subject patterns and handles edge cases without throwing.
-- [ ] Duplicate Gmail message IDs produce zero duplicate database records and zero duplicate notifications.
-- [ ] Client record is automatically created or updated with `last_seen_at`.
-- [ ] Discord bot delivers an embed notification for every new incoming message notification.
-- [ ] Integration status endpoint accurately reports whether Gmail and Discord are configured.
+- [x] Database schema includes `events`, `clients`, `agent_tasks`, and `integrations` with migrations executed.
+- [x] VGen email parser correctly parses subject patterns and handles edge cases without throwing.
+- [x] Duplicate Gmail message IDs produce zero duplicate database records and zero duplicate notifications.
+- [x] Client record is automatically created or updated with `last_seen_at`.
+- [x] Discord bot delivers an embed notification for every new incoming message notification. *(Delivered as plain text with no embeds, per the approved plan.)*
+- [x] Integration status endpoint accurately reports whether Gmail and Discord are configured.
