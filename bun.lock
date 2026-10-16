@@ -16,10 +16,14 @@
         "@client-agent/config": "workspace:*",
         "@client-agent/db": "workspace:*",
         "@client-agent/domain": "workspace:*",
+        "@client-agent/gmail": "workspace:*",
         "@client-agent/queue": "workspace:*",
         "@client-agent/shared": "workspace:*",
         "@elysiajs/cors": "^1.2.0",
         "elysia": "^1.2.25",
+      },
+      "devDependencies": {
+        "drizzle-orm": "^0.39.3",
       },
     },
     "apps/web": {

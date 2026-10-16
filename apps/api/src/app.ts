@@ -1,8 +1,11 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
+import { config } from '@client-agent/config';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { authPlugin } from './auth/plugin';
+import { createGmailWebhookRoutes } from './routes/webhooks/gmail';
+import { resolveGmailClient } from './services/gmail';
 
 export const app = new Elysia()
   .use(
@@ -45,4 +48,10 @@ export const app = new Elysia()
   })
   .use(authPlugin)
   .use(healthRoutes)
-  .use(authRoutes);
+  .use(authRoutes)
+  .use(
+    createGmailWebhookRoutes({
+      resolveGmailClient,
+      audience: config.GOOGLE_PUBSUB_AUDIENCE,
+    })
+  );
