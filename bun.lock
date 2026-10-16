@@ -79,6 +79,13 @@
       "name": "@client-agent/domain",
       "version": "0.1.0",
     },
+    "packages/gmail": {
+      "name": "@client-agent/gmail",
+      "version": "0.1.0",
+      "dependencies": {
+        "@client-agent/domain": "workspace:*",
+      },
+    },
     "packages/queue": {
       "name": "@client-agent/queue",
       "version": "0.1.0",
@@ -102,6 +109,8 @@
     "@client-agent/db": ["@client-agent/db@workspace:packages/db"],
 
     "@client-agent/domain": ["@client-agent/domain@workspace:packages/domain"],
+
+    "@client-agent/gmail": ["@client-agent/gmail@workspace:packages/gmail"],
 
     "@client-agent/queue": ["@client-agent/queue@workspace:packages/queue"],
 

@@ -24,7 +24,9 @@
       "@client-agent/db": ["packages/db/src/index.ts"],
       "@client-agent/db/*": ["packages/db/src/*"],
       "@client-agent/queue": ["packages/queue/src/index.ts"],
-      "@client-agent/queue/*": ["packages/queue/src/*"]
+      "@client-agent/queue/*": ["packages/queue/src/*"],
+      "@client-agent/gmail": ["packages/gmail/src/index.ts"],
+      "@client-agent/gmail/*": ["packages/gmail/src/*"]
     }
   },
   "include": [
