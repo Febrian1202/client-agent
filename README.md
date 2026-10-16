@@ -1,5 +1,7 @@
 # ClientAgent
 
+[![CI](https://github.com/Febrian1202/client-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Febrian1202/client-agent/actions/workflows/ci.yml)
+
 > **Personal AI Client Management Agent for VGen Creators**  
 > An automated, queue-first assistant built for solo artists and creators selling commissions on [VGen](https://vgen.co). It connects Gmail notifications, Discord channels, and a SvelteKit web dashboard with resilient background workers and human-in-the-loop approval gates.
 
