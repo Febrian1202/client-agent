@@ -145,11 +145,13 @@ bun test
 bun test packages/gmail
 bun test packages/discord
 bun test packages/db
+bun test packages/queue
 bun test apps/api
 bun test apps/worker
 
-# Run end-to-end event pipeline integration test
+# Run end-to-end integration tests
 bun test tests/e2e-event-pipeline.test.ts
+bun test tests/e2e-worker-hardening.test.ts
 
 # Typecheck all packages
 bun run typecheck

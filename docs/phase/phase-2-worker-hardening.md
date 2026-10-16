@@ -1,6 +1,7 @@
 # Phase 2 — Worker System Hardening: Step-by-Step Implementation Guide
 
 > **Goal:** Transform the raw Redis Streams consumer into a production-grade, resilient worker engine featuring a strict task state machine, exponential backoff retries, dead-letter management, idempotency enforcement, graceful shutdown, and task observability APIs.
+> **Status:** COMPLETED
 > **Prerequisites:** Phase 1 completed.
 
 ---
@@ -46,7 +47,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ## Atomic Task Breakdown
 
 ### Task 2.1: Robust Task Execution Wrapper in `packages/queue`
-- [ ] Implement Task Runner abstraction (`src/runner.ts`):
+- [x] Implement Task Runner abstraction (`src/runner.ts`):
   - Wraps execution of any task handler:
     1. Update task record in PostgreSQL: `status = 'running'`, `started_at = now()`, `attempts = attempts + 1`.
     2. Try executing the handler function.
@@ -66,7 +67,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ---
 
 ### Task 2.2: Idempotency Key Guard
-- [ ] In `packages/queue/src/idempotency.ts`:
+- [x] In `packages/queue/src/idempotency.ts`:
   - Provide helper `checkAndClaimIdempotency(db, idempotencyKey: string): Promise<boolean>`
   - If a task with `idempotency_key` exists and is `completed` or `running`, reject or return existing task ID immediately.
   - Integrate this check in API task submission and worker pre-execution.
@@ -74,7 +75,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ---
 
 ### Task 2.3: Pending Entries Recovery (Crash Resilience)
-- [ ] In `packages/queue/src/recovery.ts`:
+- [x] In `packages/queue/src/recovery.ts`:
   - Implement consumer startup recovery routine using Redis `XAUTOCLAIM` or `XPENDING`:
   - When a worker boots, check for messages in the consumer group that have been pending for longer than timeout (e.g. 5 minutes) without an `XACK`.
   - Claim orphaned messages from dead workers and re-process them.
@@ -82,7 +83,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ---
 
 ### Task 2.4: Graceful Shutdown Implementation
-- [ ] In `apps/worker/src/index.ts`:
+- [x] In `apps/worker/src/index.ts`:
   - Track active in-flight tasks (`activeJobsCounter: number`).
   - Listen for `SIGTERM` and `SIGINT`:
     1. Stop accepting new messages from Redis Streams (`isShuttingDown = true`).
@@ -93,7 +94,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ---
 
 ### Task 2.5: Task Observability APIs in `apps/api`
-- [ ] In `apps/api/src/routes/tasks.ts`:
+- [x] In `apps/api/src/routes/tasks.ts`:
   - `GET /api/v1/agent/tasks`:
     - List tasks with pagination (`?page=1&limit=20`).
     - Filter by `?status=queued|running|completed|failed|dead` and `?type=...`.
@@ -101,7 +102,7 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
     - Return detailed task record including attempts, errors, timestamps, input, output.
   - `POST /api/v1/agent/tasks/:id/retry`:
     - Allow manual retry of a `dead` or `failed` task by resetting `attempts = 0` and re-queuing.
-- [ ] Register task routes in `apps/api/src/index.ts`.
+- [x] Register task routes in `apps/api/src/app.ts`.
 
 ---
 
@@ -134,9 +135,9 @@ In Phase 1, workers processed tasks simply by reading from streams. In Phase 2, 
 ---
 
 ## Done When Checklist
-- [ ] Tasks cleanly transition through the full lifecycle: `queued` → `running` → `completed` | `failed` → `dead`.
-- [ ] Exponential backoff delay prevents hammering resources during transient network glitches.
-- [ ] Dead tasks are safely acknowledged in Redis and flagged in PostgreSQL with full error context.
-- [ ] Crash recovery routinely re-claims abandoned pending messages.
-- [ ] Worker responds to `SIGTERM` by finishing active jobs and exiting cleanly.
-- [ ] Task query endpoints (`GET /agent/tasks`) provide full visibility into background jobs.
+- [x] Tasks cleanly transition through the full lifecycle: `queued` → `running` → `completed` | `failed` → `dead`.
+- [x] Exponential backoff delay prevents hammering resources during transient network glitches.
+- [x] Dead tasks are safely acknowledged in Redis and flagged in PostgreSQL with full error context.
+- [x] Crash recovery routinely re-claims abandoned pending messages.
+- [x] Worker responds to `SIGTERM` by finishing active jobs and exiting cleanly.
+- [x] Task query endpoints (`GET /agent/tasks`) provide full visibility into background jobs.
