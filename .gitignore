@@ -29,6 +29,7 @@ yarn-error.log*
 bun.lockb.bak
 
 # Operating System & IDE
+.superpowers/
 .DS_Store
 Thumbs.db
 .idea/

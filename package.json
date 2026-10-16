@@ -1,0 +1,17 @@
+{
+  "name": "client-agent-root",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "bun --filter=@client-agent/api dev",
+    "dev:web": "bun --filter=@client-agent/web dev",
+    "dev:worker": "bun --filter=@client-agent/worker dev",
+    "dev": "bun --filter='*' dev",
+    "build": "bun --filter='*' build",
+    "lint": "bun --filter='*' lint",
+    "test": "bun test"
+  }
+}
