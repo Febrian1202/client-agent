@@ -1,0 +1,27 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "client-agent-root",
+    },
+    "packages/config": {
+      "name": "@client-agent/config",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^3.24.2",
+      },
+    },
+    "packages/domain": {
+      "name": "@client-agent/domain",
+      "version": "0.1.0",
+    },
+  },
+  "packages": {
+    "@client-agent/config": ["@client-agent/config@workspace:packages/config"],
+
+    "@client-agent/domain": ["@client-agent/domain@workspace:packages/domain"],
+
+    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+  }
+}
