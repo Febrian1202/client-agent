@@ -31,6 +31,72 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.api
+    container_name: client_agent_api_dev
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      APP_URL: http://localhost:3001
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/client_agent
+      REDIS_URL: redis://redis:6379
+      AUTH_USERNAME: ${AUTH_USERNAME:-admin}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH:-$$argon2id$$v=19$$m=65536,t=2,p=1$$bPUR30fXb+3Q0vAt9gE3QU9RlwYL/aY56PWJ8jZFDeY$$fYqUrG3GjIXSN8o7clybg1RajUlOFdadc0VEA/K1ctw}
+      AUTH_SECRET: ${AUTH_SECRET:-dev_secret_key_1234567890}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.worker
+    container_name: client_agent_worker_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/client_agent
+      REDIS_URL: redis://redis:6379
+      AUTH_USERNAME: ${AUTH_USERNAME:-admin}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH:-$$argon2id$$v=19$$m=65536,t=2,p=1$$bPUR30fXb+3Q0vAt9gE3QU9RlwYL/aY56PWJ8jZFDeY$$fYqUrG3GjIXSN8o7clybg1RajUlOFdadc0VEA/K1ctw}
+      AUTH_SECRET: ${AUTH_SECRET:-dev_secret_key_1234567890}
+      BROWSER_PROFILE_PATH: /app/browser-profile
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_APPLICATION_ID: ${DISCORD_APPLICATION_ID:-}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      AI_PROVIDER_API_KEY: ${AI_PROVIDER_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-claude-3-5-sonnet-20241022}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - worker_dev_browser_profile:/app/browser-profile
+
+  web:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.web
+    container_name: client_agent_web_dev
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ORIGIN: http://localhost:5173
+    depends_on:
+      - api
+
 volumes:
   postgres_dev_data:
   redis_dev_data:
+  worker_dev_browser_profile:
