@@ -8,6 +8,7 @@ import { createGmailWebhookRoutes } from './routes/webhooks/gmail';
 import { createIntegrationRoutes } from './routes/integrations';
 import { resolveGmailClient, verifyGmailRefreshToken } from './services/gmail';
 import { verifyDiscordChannel } from './services/discord';
+import { taskRoutes } from './routes/tasks';
 
 export const app = new Elysia()
   .use(
@@ -62,4 +63,5 @@ export const app = new Elysia()
       verifyGmailRefreshToken,
       verifyDiscordChannel,
     })
-  );
+  )
+  .use(taskRoutes);

@@ -5,7 +5,7 @@ import type { SessionData } from '@client-agent/domain';
 const SESSION_PREFIX = 'client-agent:session:';
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-export async function createSession(userId: number, username: string): Promise<string> {
+export async function createSession(userId: number, username: string = 'creator'): Promise<string> {
   const sessionId = generateId('ses');
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_TTL_SECONDS * 1000);
