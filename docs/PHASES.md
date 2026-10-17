@@ -129,23 +129,23 @@ working system that does something useful.
 
 ---
 
-## Phase 4 — AI Agent (Next Up)
+## Phase 4 — AI Agent (Completed)
 
 > **Detailed Guide:** See [docs/phase/phase-4-ai-agent.md](phase/phase-4-ai-agent.md)  
-> **Status:** Next Up
+> **Status:** Completed
 
 **Goal:** Summarize conversations and generate reply drafts.
 
 ```
-[ ] packages/ai — LLM provider abstraction
-[ ] packages/agent — Agent core, tool registry, context builder
-[ ] Prompt architecture (base + safety + context layers)
-[ ] summarize_conversation tool
-[ ] draft_reply tool
-[ ] Agent run recording
-[ ] GENERATE_SUMMARY task handler
-[ ] GENERATE_REPLY_DRAFT task handler
-[ ] Discord /summarize and /reply commands
+[x] packages/ai — LLM provider abstraction (OpenAI-compatible / 9router)
+[x] packages/agent — Agent core, tool registry, context builder
+[x] Prompt architecture (base + safety + anti-AI-slop + context layers)
+[x] summarize_conversation tool
+[x] draft_reply tool
+[x] Agent run recording (agent_runs table in PostgreSQL)
+[x] GENERATE_SUMMARY task handler
+[x] GENERATE_REPLY_DRAFT task handler
+[x] Discord /summarize and /reply commands
 ```
 
 **Done when:**

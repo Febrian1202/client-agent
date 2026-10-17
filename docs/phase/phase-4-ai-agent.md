@@ -61,7 +61,7 @@ Result delivered to Discord (Follow-up message edited with clean Embed)
 ## Atomic Task Breakdown
 
 ### Task 4.1: Database Schema & Migration for `agent_runs`
-- [ ] In `packages/db/src/schema/agent_runs.ts`, define the `agent_runs` table:
+- [x] In `packages/db/src/schema/agent_runs.ts`, define the `agent_runs` table:
   - `id`: `bigserial` primary key
   - `task_id`: `bigint` references `agent_tasks(id)` (nullable for ad-hoc runs)
   - `provider`: `text` not null (e.g. `'openai'`, `'9router'`)
@@ -76,58 +76,58 @@ Result delivered to Discord (Follow-up message edited with clean Embed)
   - `status`: `text` not null (`'success'` | `'error'`)
   - `error_message`: `text` nullable
   - `created_at`: `timestamp with time zone` default `now()`
-- [ ] Export `agent_runs` in `packages/db/src/schema/index.ts`.
-- [ ] Add CRUD helper functions in `packages/db/src/queries/agentRuns.ts`:
+- [x] Export `agent_runs` in `packages/db/src/schema/index.ts`.
+- [x] Add CRUD helper functions in `packages/db/src/queries/agentRuns.ts`:
   - `insertAgentRun(data: NewAgentRun): Promise<AgentRun>`
   - `getAgentRunsByTaskId(taskId: number): Promise<AgentRun[]>`
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 4.2: Config Schema Updates for OpenAI-Compatible / 9router
-- [ ] In `packages/config/src/schema.ts`, expand configuration options:
+- [x] In `packages/config/src/schema.ts`, expand configuration options:
   - `AI_BASE_URL`: `z.string().url().default('https://api.openai.com/v1')` (can point to self-hosted `http://<vps-ip>:<port>/v1` or custom 9router domain)
   - `AI_PROVIDER_API_KEY`: `z.string().min(1, 'AI_PROVIDER_API_KEY is required')`
   - `AI_MODEL`: `z.string().default('gpt-4o')`
   - `AI_TIMEOUT_MS`: `z.coerce.number().default(60000)`
   - `AI_MAX_RETRIES`: `z.coerce.number().default(2)`
-- [ ] Update `.env.example` and pass variables into `infrastructure/docker-compose.yml`.
+- [x] Update `.env.example` and pass variables into `infrastructure/docker-compose.yml`.
 
 ---
 
 ### Task 4.3: `packages/ai` (OpenAI-Compatible Provider Abstraction)
-- [ ] Create `packages/ai/package.json` (`@client-agent/ai`) in Bun workspaces.
-- [ ] Define provider interfaces in `packages/ai/src/types.ts`:
+- [x] Create `packages/ai/package.json` (`@client-agent/ai`) in Bun workspaces.
+- [x] Define provider interfaces in `packages/ai/src/types.ts`:
   - `ChatMessage`: role (`'system'` | `'user'` | `'assistant'` | `'tool'`), content, name, tool_calls.
   - `ChatCompletionOptions`: model, messages, temperature, maxTokens, tools, toolChoice.
   - `ChatCompletionResult`: content, toolCalls, usage (promptTokens, completionTokens, totalTokens), durationMs, model, finishReason.
-- [ ] Implement `OpenAICompatibleClient` in `packages/ai/src/client.ts`:
+- [x] Implement `OpenAICompatibleClient` in `packages/ai/src/client.ts`:
   - Uses fetch or official OpenAI SDK with custom `baseURL` support.
   - Automatically records start/end time to calculate `durationMs`.
   - Normalizes usage and token counts.
   - Exponential backoff retry on 429 and 5xx errors.
-- [ ] Implement unit tests in `packages/ai/tests/client.test.ts` with mocked HTTP routes verifying custom `baseURL`, headers, token tracking, and timeout handling.
+- [x] Implement unit tests in `packages/ai/tests/client.test.ts` with mocked HTTP routes verifying custom `baseURL`, headers, token tracking, and timeout handling.
 
 ---
 
 ### Task 4.4: `packages/agent` (Tool Registry & Contracts)
-- [ ] Create `packages/agent/package.json` (`@client-agent/agent`) in Bun workspaces.
-- [ ] Define typed tool definitions in `packages/agent/src/tools/definitions.ts`:
+- [x] Create `packages/agent/package.json` (`@client-agent/agent`) in Bun workspaces.
+- [x] Define typed tool definitions in `packages/agent/src/tools/definitions.ts`:
   - `find_client`: schema `{ username: string }` -> searches client in DB.
   - `get_conversation`: schema `{ clientUsername: string, limit?: number }` -> retrieves stored messages from DB.
   - `read_vgen_conversation`: schema `{ clientUsername: string }` -> live sync via `PlatformAdapter`.
   - `summarize_conversation`: schema `{ clientUsername: string }` -> compiles status and key details.
   - `draft_reply`: schema `{ clientUsername: string, instruction: string, tone?: string }` -> drafts response.
-- [ ] Implement `ToolRegistry` and `ToolExecutor` in `packages/agent/src/tools/registry.ts`:
+- [x] Implement `ToolRegistry` and `ToolExecutor` in `packages/agent/src/tools/registry.ts`:
   - Maps tool invocations to real domain/database service calls.
   - Validates tool input arguments using Zod schemas.
   - Ensures tool calls are executed safely with strict error handling and audit logging.
-- [ ] Unit tests in `packages/agent/tests/tools.test.ts`.
+- [x] Unit tests in `packages/agent/tests/tools.test.ts`.
 
 ---
 
 ### Task 4.5: Prompt Architecture & Anti-Slop Persona Builder
-- [ ] In `packages/agent/src/prompts/builder.ts`, implement layered prompt assembler:
+- [x] In `packages/agent/src/prompts/builder.ts`, implement layered prompt assembler:
   1. **Layer 1: Identity & Persona (Creator Voice)**
      - Role: Personal assistant representing an artist specializing in Live2D art cutting, layer separation, style-matching redraws, and animation on VGen.
      - Tone: Warm, relaxed, professional, authentic.
@@ -146,40 +146,40 @@ Result delivered to Discord (Follow-up message edited with clean Embed)
        - **Key Details & Client Questions:** Bullet points of what the client wants/needs.
        - **Next Action for Creator:** Clear, actionable takeaway.
      - For `/reply`: Instruct LLM to generate the reply draft following the creator's instruction and voice.
-- [ ] Unit tests in `packages/agent/tests/prompts.test.ts` verifying prompt rules and formatting.
+- [x] Unit tests in `packages/agent/tests/prompts.test.ts` verifying prompt rules and formatting.
 
 ---
 
 ### Task 4.6: Worker Task Handlers: Summary & Reply Draft
-- [ ] In `packages/domain/src/index.ts`, define task types:
+- [x] In `packages/domain/src/index.ts`, define task types:
   - `TaskType.GENERATE_SUMMARY = 'GENERATE_SUMMARY'`
   - `TaskType.GENERATE_REPLY_DRAFT = 'GENERATE_REPLY_DRAFT'`
-- [ ] In `packages/queue/src/streams.ts`, define `STREAMS.AGENT = 'client-agent:agent'`.
-- [ ] Implement `apps/worker/src/handlers/generateSummary.ts`:
+- [x] In `packages/queue/src/streams.ts`, define `STREAMS.AGENT = 'client-agent:agent'`.
+- [x] Implement `apps/worker/src/handlers/generateSummary.ts`:
   - Loads client and conversation history from DB (or triggers live sync if empty).
   - Calls agent summary orchestrator.
   - Inserts record into `agent_runs`.
   - Edits Discord interaction / sends message to Discord channel with clean summary embed.
-- [ ] Implement `apps/worker/src/handlers/generateReplyDraft.ts`:
+- [x] Implement `apps/worker/src/handlers/generateReplyDraft.ts`:
   - Loads conversation history + creator instruction.
   - Calls agent reply orchestrator.
   - Inserts record into `agent_runs`.
   - Edits Discord interaction / sends message to Discord channel with draft preview embed.
-- [ ] Register `STREAMS.AGENT` consumer in `apps/worker/src/index.ts`.
+- [x] Register `STREAMS.AGENT` consumer in `apps/worker/src/index.ts`.
 
 ---
 
 ### Task 4.7: Discord Slash Commands: `/summarize` & `/reply`
-- [ ] In `packages/discord/src/commands/summarize.ts`:
+- [x] In `packages/discord/src/commands/summarize.ts`:
   - Slash command `/summarize username:<string>`.
   - Defers reply immediately (`"Analyzing conversation with @username... ⏳"`).
   - Enqueues `GENERATE_SUMMARY` task onto `STREAMS.AGENT`.
-- [ ] In `packages/discord/src/commands/reply.ts`:
+- [x] In `packages/discord/src/commands/reply.ts`:
   - Slash command `/reply username:<string> instruction:<string>`.
   - Defers reply immediately (`"Drafting contextual reply for @username... ⏳"`).
   - Enqueues `GENERATE_REPLY_DRAFT` task onto `STREAMS.AGENT`.
-- [ ] Register new commands in `packages/discord/src/bot.ts` and `apps/worker/src/bot.ts`.
-- [ ] Unit & integration tests in `packages/discord/tests`.
+- [x] Register new commands in `packages/discord/src/bot.ts` and `apps/worker/src/bot.ts`.
+- [x] Unit & integration tests in `packages/discord/tests`.
 
 ---
 
@@ -213,10 +213,10 @@ Result delivered to Discord (Follow-up message edited with clean Embed)
 ---
 
 ## Done When Checklist
-- [ ] Database migration applied; `agent_runs` table exists and records every AI call.
-- [ ] `packages/ai` provides a resilient OpenAI-compatible client supporting custom `AI_BASE_URL`.
-- [ ] `packages/agent` enforces typed tools, layered prompts, and anti-AI-slop rules (natural greeting rhythm, ≤1 emoji).
-- [ ] Worker processes `GENERATE_SUMMARY` and `GENERATE_REPLY_DRAFT` tasks via Redis Streams.
-- [ ] Discord `/summarize` returns accurate, structured conversation summaries.
-- [ ] Discord `/reply` drafts natural responses matching creator persona and specific instructions.
-- [ ] Full test suite (`bun test`) and typecheck pass 100%.
+- [x] Database migration applied; `agent_runs` table exists and records every AI call.
+- [x] `packages/ai` provides a resilient OpenAI-compatible client supporting custom `AI_BASE_URL`.
+- [x] `packages/agent` enforces typed tools, layered prompts, and anti-AI-slop rules (natural greeting rhythm, ≤1 emoji).
+- [x] Worker processes `GENERATE_SUMMARY` and `GENERATE_REPLY_DRAFT` tasks via Redis Streams.
+- [x] Discord `/summarize` returns accurate, structured conversation summaries.
+- [x] Discord `/reply` drafts natural responses matching creator persona and specific instructions.
+- [x] Full test suite (`bun test`) and typecheck pass 100%.
