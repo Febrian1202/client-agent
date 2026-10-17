@@ -25,16 +25,41 @@ export function extractMessages(blockHtml: string | string[]): ParsedThreadMessa
     .toArray()
     .flatMap((element) => {
       const block = $(element);
-      const content = block.find(MESSAGE_BODY_SELECTOR).text().trim();
+      const testBody = block.find(MESSAGE_BODY_SELECTOR);
+      const content = (
+        testBody.length
+          ? testBody.text()
+          : (block.find('.str-chat__message-text-inner').first().length
+              ? block.find('.str-chat__message-text-inner').first()
+              : block.find('.str-chat__message-text').first()
+            ).text()
+      ).trim();
 
       if (!content) return [];
 
+      const testSender = block.find(MESSAGE_SENDER_SELECTOR);
+      const senderName = (
+        testSender.length
+          ? testSender.text()
+          : block.find('.str-chat__avatar[title]').attr('title') ||
+            block.find('.str-chat__message-simple-name').text() ||
+            ''
+      ).trim();
+
+      const testTime = block.find(MESSAGE_TIME_SELECTOR);
+      const sentAtRaw = testTime.length ? testTime.text().trim() : null;
+
+      const isOutbound =
+        block.attr(OUTBOUND_MARKER) !== undefined ||
+        block.hasClass('str-chat__message--me') ||
+        block.find('[data-message-side="outgoing"]').length > 0;
+
       return [
         {
-          senderName: block.find(MESSAGE_SENDER_SELECTOR).text().trim(),
+          senderName,
           content,
-          sentAtRaw: block.find(MESSAGE_TIME_SELECTOR).text().trim() || null,
-          isOutbound: block.attr(OUTBOUND_MARKER) !== undefined,
+          sentAtRaw,
+          isOutbound,
         },
       ];
     });

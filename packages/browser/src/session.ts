@@ -1,6 +1,6 @@
 import { type Page } from 'playwright';
 
-const VGEN_DASHBOARD_URL = 'https://vgen.co/dashboard';
+const VGEN_DASHBOARD_URL = 'https://vgen.co/creator';
 
 export const AUTH_MARKER_SELECTOR = '[data-testid="user-avatar"]';
 
@@ -13,5 +13,8 @@ export async function checkVGenAuthStatus(
   if (page.url().includes('/login')) {
     return false;
   }
-  return page.locator(AUTH_MARKER_SELECTOR).isVisible();
+  const hasMarker = await page.locator(AUTH_MARKER_SELECTOR).first().isVisible().catch(() => false);
+  if (hasMarker) return true;
+  const hasLiveAuth = await page.locator('svg.chatIcon, button[aria-label="Profile menu"], a[href*="/creator"]').first().isVisible().catch(() => false);
+  return hasLiveAuth;
 }

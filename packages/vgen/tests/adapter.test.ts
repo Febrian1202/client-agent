@@ -13,10 +13,10 @@ const inboxHtml = readFileSync(join(fixturesDir, 'inbox.html'), 'utf8');
 const loginHtml = readFileSync(join(fixturesDir, 'login.html'), 'utf8');
 const threadHtml = readFileSync(join(fixturesDir, 'thread.html'), 'utf8');
 
-function makeDashboardHtml() {
+function makeDashboardHtml(withInbox = true) {
   // Strip the wrapping [] from the CSS attribute selector to build a valid HTML attribute
   const attr = AUTH_MARKER_SELECTOR.replace(/^\[|\]$/g, '');
-  return `<html><body><img ${attr} src="/avatar.png" /></body></html>`;
+  return `<html><body><img ${attr} src="/avatar.png" />${withInbox ? inboxHtml : ''}</body></html>`;
 }
 
 async function makeIsolatedCtx() {
@@ -35,7 +35,7 @@ describe('VGenBrowserAdapter.getConversation', () => {
 
       await page.route('**/vgen.co/**', (route) => {
         const url = route.request().url();
-        if (url.includes('/dashboard')) {
+        if (url.includes('/creator') || url.includes('/dashboard')) {
           route.fulfill({ status: 200, contentType: 'text/html', body: makeDashboardHtml() });
         } else if (url.includes('/inbox/abc123')) {
           route.fulfill({ status: 200, contentType: 'text/html', body: threadHtml });
@@ -123,7 +123,7 @@ describe('VGenBrowserAdapter.getConversation', () => {
 
       await page.route('**/vgen.co/**', (route) => {
         const url = route.request().url();
-        if (url.includes('/dashboard')) {
+        if (url.includes('/creator') || url.includes('/dashboard')) {
           route.fulfill({ status: 200, contentType: 'text/html', body: makeDashboardHtml() });
         } else if (url.includes('/inbox')) {
           route.fulfill({ status: 200, contentType: 'text/html', body: inboxHtml });
@@ -161,7 +161,7 @@ describe('VGenBrowserAdapter.getConversation', () => {
 
         await page.route('**/vgen.co/**', (route) => {
           const url = route.request().url();
-          if (url.includes('/dashboard')) {
+          if (url.includes('/creator') || url.includes('/dashboard')) {
             route.fulfill({ status: 200, contentType: 'text/html', body: makeDashboardHtml() });
           } else if (url.includes('/inbox/abc123')) {
             route.fulfill({ status: 200, contentType: 'text/html', body: threadHtml });

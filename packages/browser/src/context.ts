@@ -14,7 +14,7 @@ export async function launchPersistentContext(
   const resolvedPath = resolve(rawPath);
   return chromium.launchPersistentContext(resolvedPath, {
     headless: options?.headless ?? true,
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1440, height: 900 },
   });
 }
 
