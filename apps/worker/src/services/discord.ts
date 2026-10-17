@@ -1,9 +1,10 @@
 import { config } from '@client-agent/config';
 import { getIntegration, getOwnerUserId } from '@client-agent/db';
-import { createDiscordNotifier, type DiscordNotifier } from '@client-agent/discord';
+import { createDiscordNotifier, type DiscordMessenger, type DiscordNotifier } from '@client-agent/discord';
 
 export interface DiscordNotifierDeps {
   notifier: DiscordNotifier;
+  messenger: DiscordMessenger;
   channelId: string;
 }
 
@@ -19,5 +20,6 @@ export async function resolveDiscordNotifier(): Promise<DiscordNotifierDeps | nu
   const channelId = metadata.channelId;
   if (typeof channelId !== 'string' || channelId.length === 0) return null;
 
-  return { notifier: createDiscordNotifier({ token }), channelId };
+  const notifier = createDiscordNotifier({ token });
+  return { notifier, messenger: notifier, channelId };
 }

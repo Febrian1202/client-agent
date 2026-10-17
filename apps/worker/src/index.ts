@@ -1,9 +1,16 @@
 import { STREAMS, createRedisClient } from '@client-agent/queue';
+import { TaskType } from '@client-agent/domain';
+import { closeSharedBrowserContext } from '@client-agent/browser';
 import { client as dbClient } from '@client-agent/db';
 import { startWorker } from './consumers';
 import { handleProcessGmailEvent } from './handlers/processGmailEvent';
 import { handleNotifyDiscord } from './handlers/notifyDiscord';
+import {
+  handleReadVgenConversation,
+  handleSyncConversation,
+} from './handlers/readVgenConversation';
 import { resolveDiscordNotifier } from './services/discord';
+import { resolveVgenWorkerDeps } from './services/vgen';
 
 const WORKER_ID = process.env.WORKER_ID || `worker-${process.pid}`;
 const CONSUMER_GROUP = 'client_agent_workers';
@@ -32,12 +39,26 @@ const { shutdown } = await startWorker({
         return await handleNotifyDiscord(task, deps);
       },
     },
+    {
+      stream: STREAMS.BROWSER,
+      handler: async (task) => {
+        const deps = await resolveVgenWorkerDeps();
+        const type = task.data.type;
+        if (type !== String(TaskType.READ_VGEN_CONVERSATION) && type !== String(TaskType.SYNC_CONVERSATION)) {
+          throw new Error(`BROWSER stream received unsupported task type: ${type}`);
+        }
+        return type === String(TaskType.SYNC_CONVERSATION)
+          ? handleSyncConversation(task, deps)
+          : handleReadVgenConversation(task, deps);
+      },
+    },
   ],
 });
 
 async function shutdownAndExit() {
   console.log('\n🛑 Worker received shutdown signal. Exiting gracefully...');
   await shutdown(15000);
+  await closeSharedBrowserContext();
   redis.disconnect();
   await dbClient.end();
   process.exit(0);
