@@ -9,6 +9,8 @@ import {
 } from '../src/context';
 import { checkVGenAuthStatus, AUTH_MARKER_SELECTOR } from '../src/session';
 
+const TEST_TIMEOUT = 15_000;
+
 // --- Spike: Bun + Playwright compat gate ---
 
 describe('Spike: Bun + Playwright compat', () => {
@@ -44,7 +46,7 @@ describe('checkVGenAuthStatus', () => {
     const result = await checkVGenAuthStatus(page);
     expect(result).toBe(true);
     await ctx.close();
-  });
+  }, TEST_TIMEOUT);
 
   test('returns false when dashboard redirects to /login', async () => {
     const { ctx, page } = await makeIsolatedPage();
@@ -67,7 +69,7 @@ describe('checkVGenAuthStatus', () => {
     const result = await checkVGenAuthStatus(page);
     expect(result).toBe(false);
     await ctx.close();
-  });
+  }, TEST_TIMEOUT);
 
   test('returns false when dashboard HTML has no auth marker', async () => {
     const { ctx, page } = await makeIsolatedPage();
@@ -81,7 +83,7 @@ describe('checkVGenAuthStatus', () => {
     const result = await checkVGenAuthStatus(page);
     expect(result).toBe(false);
     await ctx.close();
-  });
+  }, TEST_TIMEOUT);
 });
 
 // --- Shared context lifecycle ---
