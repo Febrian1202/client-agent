@@ -19,8 +19,9 @@ export function getStreamForTaskType(type: TaskType | string): string {
     case TaskType.NOTIFY_DISCORD:
       return STREAMS.NOTIFICATIONS;
     case TaskType.READ_VGEN_CONVERSATION:
-      return STREAMS.BROWSER;
     case TaskType.SYNC_CONVERSATION:
+      // browser work must stay serialized on one profile
+      return STREAMS.BROWSER;
     case TaskType.SYNC_COMMISSION:
       return STREAMS.SYNC;
     case TaskType.GENERATE_SUMMARY:

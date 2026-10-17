@@ -9,6 +9,7 @@ import { createIntegrationRoutes } from './routes/integrations';
 import { resolveGmailClient, verifyGmailRefreshToken } from './services/gmail';
 import { verifyDiscordChannel } from './services/discord';
 import { taskRoutes } from './routes/tasks';
+import { conversationRoutes } from './routes/conversations';
 
 export const app = new Elysia()
   .use(
@@ -64,4 +65,5 @@ export const app = new Elysia()
       verifyDiscordChannel,
     })
   )
-  .use(taskRoutes);
+  .use(taskRoutes)
+  .use(conversationRoutes);
