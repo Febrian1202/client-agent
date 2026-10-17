@@ -32,7 +32,6 @@ let conversationId = 0;
 let chunkConversationId = 0;
 let taskId = 0;
 const taskKey = `queries-phase3:${suffix}`;
-const auditLogIds: number[] = [];
 
 beforeAll(async () => {
   const userId = await getOwnerUserId();
@@ -48,9 +47,6 @@ afterAll(async () => {
     await db.delete(messages).where(inArray(messages.conversationId, conversationIds));
   }
   await db.delete(conversations).where(inArray(conversations.externalId, [mainExternalId, chunkExternalId]));
-  if (auditLogIds.length > 0) {
-    await db.delete(auditLogs).where(inArray(auditLogs.id, auditLogIds));
-  }
   await db.delete(agentTasks).where(eq(agentTasks.idempotencyKey, taskKey));
   await db.delete(clients).where(eq(clients.username, username));
 });
@@ -96,11 +92,18 @@ describe('Phase 3 query helpers', () => {
     expect(await insertMessagesIfNew(chunkConversationId, batch)).toBe(0);
   });
 
-  it('touches lastSyncedAt on the conversation', async () => {
+  it('touches lastSyncedAt on the conversation and rejects a missing row', async () => {
     await touchConversationLastSynced(conversationId);
     const row = await getConversationById(conversationId);
     expect(row).not.toBeNull();
     expect(row!.lastSyncedAt).not.toBeNull();
+
+    try {
+      await touchConversationLastSynced(9999999);
+      throw new Error('expected touchConversationLastSynced to reject');
+    } catch (error) {
+      expect((error as Error).message).toBe('Conversation 9999999 not found');
+    }
   });
 
   it('joins the client username, null for a missing conversation', async () => {
@@ -120,7 +123,6 @@ describe('Phase 3 query helpers', () => {
       targetType: 'task', targetId: taskId,
       metadata: { reason: 'vgen session expired' },
     });
-    auditLogIds.push(row.id);
     expect(row.action).toBe('SESSION_EXPIRED');
     expect(row.actorType).toBe('agent');
 

@@ -41,10 +41,14 @@ export async function getConversationById(id: number): Promise<ConversationRow |
 }
 
 export async function touchConversationLastSynced(id: number): Promise<void> {
-  await db
+  const rows = await db
     .update(conversations)
     .set({ lastSyncedAt: sql`now()`, updatedAt: sql`now()` })
-    .where(eq(conversations.id, id));
+    .where(eq(conversations.id, id))
+    .returning();
+  if (!rows[0]) {
+    throw new Error(`Conversation ${id} not found`);
+  }
 }
 
 export interface ConversationWithClient {
