@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@client-agent/domain": "workspace:*",
+    "@client-agent/platform": "workspace:*",
     "discord.js": "^14.27.0"
   }
 }

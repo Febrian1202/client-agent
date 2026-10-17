@@ -99,6 +99,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@client-agent/domain": "workspace:*",
+        "@client-agent/platform": "workspace:*",
         "discord.js": "^14.27.0",
       },
     },
@@ -136,6 +137,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@client-agent/browser": "workspace:*",
+        "@client-agent/config": "workspace:*",
         "@client-agent/platform": "workspace:*",
         "@client-agent/shared": "workspace:*",
         "cheerio": "^1.2.0",
