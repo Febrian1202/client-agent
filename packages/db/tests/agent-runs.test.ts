@@ -60,7 +60,7 @@ describe('agent_runs table and queries', () => {
     const runs = await getAgentRunsByTaskId(taskId);
     expect(runs).toBeArray();
     expect(runs.length).toBe(1);
-    expect(runs[0].id).toBe(run.id);
+    expect(runs[0]!.id).toBe(run.id);
   });
 
   it('supports error runs with errorMessage', async () => {

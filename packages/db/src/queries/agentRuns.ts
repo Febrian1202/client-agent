@@ -4,6 +4,9 @@ import { agentRuns, type AgentRun, type NewAgentRun } from '../schema/agent_runs
 
 export async function insertAgentRun(data: NewAgentRun): Promise<AgentRun> {
   const [created] = await db.insert(agentRuns).values(data).returning();
+  if (!created) {
+    throw new Error('Failed to insert agent run');
+  }
   return created;
 }
 
