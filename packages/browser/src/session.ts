@@ -2,7 +2,7 @@ import { type Page } from 'playwright';
 
 const VGEN_DASHBOARD_URL = 'https://vgen.co/dashboard';
 
-const AUTH_MARKER_SELECTOR = '[data-testid="user-avatar"]';
+export const AUTH_MARKER_SELECTOR = '[data-testid="user-avatar"]';
 
 export async function checkVGenAuthStatus(
   page: Page,

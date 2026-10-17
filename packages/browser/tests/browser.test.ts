@@ -1,14 +1,13 @@
-import { describe, test, expect, afterAll } from 'bun:test';
+import { describe, test, expect } from 'bun:test';
 import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { chromium } from 'playwright';
 import {
   launchPersistentContext,
   getSharedBrowserContext,
   closeSharedBrowserContext,
 } from '../src/context';
-import { checkVGenAuthStatus } from '../src/session';
+import { checkVGenAuthStatus, AUTH_MARKER_SELECTOR } from '../src/session';
 
 // --- Spike: Bun + Playwright compat gate ---
 
@@ -27,12 +26,6 @@ describe('Spike: Bun + Playwright compat', () => {
 // --- Auth status: three route-intercepted cases ---
 
 describe('checkVGenAuthStatus', () => {
-  const AUTH_MARKER = '[data-testid="user-avatar"]';
-
-  afterAll(async () => {
-    await closeSharedBrowserContext();
-  });
-
   async function makeIsolatedPage() {
     const tmpDir = mkdtempSync(join(tmpdir(), 'browser-auth-'));
     const ctx = await launchPersistentContext({ profilePath: tmpDir });
@@ -45,7 +38,7 @@ describe('checkVGenAuthStatus', () => {
       route.fulfill({
         status: 200,
         contentType: 'text/html',
-        body: `<html><body><img data-testid="user-avatar" src="/avatar.png" /></body></html>`,
+        body: `<html><body><img ${AUTH_MARKER_SELECTOR.slice(1, -1)} src="/avatar.png" /></body></html>`,
       });
     });
     const result = await checkVGenAuthStatus(page);

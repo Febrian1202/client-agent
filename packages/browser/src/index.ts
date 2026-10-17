@@ -4,4 +4,4 @@ export {
   closeSharedBrowserContext,
   type LaunchPersistentContextOptions,
 } from './context';
-export { checkVGenAuthStatus } from './session';
+export { checkVGenAuthStatus, AUTH_MARKER_SELECTOR } from './session';
