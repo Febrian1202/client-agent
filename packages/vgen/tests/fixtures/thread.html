@@ -1,0 +1,23 @@
+<!-- packages/vgen/tests/fixtures/thread.html (synthetic, PII-free by construction) -->
+<div class="thread" data-thread-id="abc123">
+  <div class="msg" data-testid="thread-message" data-outbound="true">
+    <span data-testid="message-sender">Rida</span>
+    <p data-testid="message-body">Hi, I can start next week.</p>
+    <time>2026-10-17T08:30:00Z</time>
+  </div>
+  <div class="msg" data-testid="thread-message">
+    <span data-testid="message-sender">ErianOsamu</span>
+    <p data-testid="message-body">Please use the payment plan B.</p>
+    <time>2h ago</time>
+  </div>
+  <div class="msg" data-testid="thread-message" data-outbound="true">
+    <span data-testid="message-sender">Rida</span>
+    <p data-testid="message-body">Sure, updating the invoice now.</p>
+  </div>
+</div>
+<!-- a fourth block with an empty body must be skipped by extractMessages -->
+<div class="msg" data-testid="thread-message">
+  <span data-testid="message-sender">ErianOsamu</span>
+  <p data-testid="message-body"></p>
+  <time>1h ago</time>
+</div>

@@ -1,0 +1,14 @@
+{
+  "name": "@client-agent/vgen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@client-agent/browser": "workspace:*",
+    "@client-agent/platform": "workspace:*",
+    "@client-agent/shared": "workspace:*",
+    "cheerio": "^1.2.0"
+  }
+}

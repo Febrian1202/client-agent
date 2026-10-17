@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { generateId, hashPassword, verifyPassword } from '../src/index';
+import { generateId, hashPassword, sha256Hex, verifyPassword } from '../src/index';
 
 describe('Shared Crypto and ID Utilities', () => {
   it('hashes and successfully verifies a password with Argon2', async () => {
@@ -25,5 +25,20 @@ describe('Shared Crypto and ID Utilities', () => {
 
     const taskId = generateId('task');
     expect(taskId.startsWith('task_')).toBeTrue();
+  });
+
+  it('hashes the known sha256 test vector for "abc"', () => {
+    expect(sha256Hex('abc')).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    );
+  });
+
+  it('produces stable hex digests across calls and differs per input', () => {
+    const first = sha256Hex('client-agent');
+    const second = sha256Hex('client-agent');
+
+    expect(second).toBe(first);
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+    expect(sha256Hex('client-agent2')).not.toBe(first);
   });
 });
