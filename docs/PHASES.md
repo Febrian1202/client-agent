@@ -101,23 +101,24 @@ working system that does something useful.
 
 ---
 
-## Phase 3 — VGen Reader (Next Up)
+## Phase 3 — VGen Reader (Completed)
 
-> **Detailed Guide:** See [docs/phase/phase-3-vgen-reader.md](phase/phase-3-vgen-reader.md)
+> **Detailed Guide:** See [docs/phase/phase-3-vgen-reader.md](phase/phase-3-vgen-reader.md)  
+> **Status:** Completed
 
 **Goal:** Retrieve and store VGen conversations via browser automation.
 
 ```
-[ ] packages/browser — Playwright utilities, profile management
-[ ] packages/platform — PlatformAdapter interface
-[ ] packages/vgen — VGenBrowserAdapter implementation
-[ ] Browser session management (manual auth, session reuse)
-[ ] Session expiry detection and creator notification
-[ ] Client model in database
-[ ] Conversation and message models in database
-[ ] READ_VGEN_CONVERSATION task handler
-[ ] SYNC_CONVERSATION task handler
-[ ] Discord /read command
+[x] packages/browser — Playwright utilities, profile management
+[x] packages/platform — PlatformAdapter interface
+[x] packages/vgen — VGenBrowserAdapter implementation
+[x] Browser session management (manual auth, session reuse)
+[x] Session expiry detection and creator notification
+[x] Client model in database
+[x] Conversation and message models in database
+[x] READ_VGEN_CONVERSATION task handler
+[x] SYNC_CONVERSATION task handler
+[x] Discord /read command
 ```
 
 **Done when:**
@@ -128,9 +129,10 @@ working system that does something useful.
 
 ---
 
-## Phase 4 — AI Agent
+## Phase 4 — AI Agent (Next Up)
 
-> **Detailed Guide:** See [docs/phase/phase-4-ai-agent.md](phase/phase-4-ai-agent.md)
+> **Detailed Guide:** See [docs/phase/phase-4-ai-agent.md](phase/phase-4-ai-agent.md)  
+> **Status:** Next Up
 
 **Goal:** Summarize conversations and generate reply drafts.
 

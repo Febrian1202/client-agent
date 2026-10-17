@@ -12,6 +12,8 @@
     "dev": "bun --filter='*' dev",
     "build": "bun --filter='*' run build",
     "typecheck": "tsc --noEmit && bun run --filter=@client-agent/web check",
+    "browser:auth": "bun run scripts/setup-browser-session.ts",
+    "browser:smoke": "bun run packages/vgen/scripts/smoke-vgen-read.ts",
     "test": "bun test"
   },
   "devDependencies": {
