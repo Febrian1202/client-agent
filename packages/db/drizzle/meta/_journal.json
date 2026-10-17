@@ -29,6 +29,13 @@
       "when": 1792217601993,
       "tag": "0003_mixed_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792246968777,
+      "tag": "0004_fantastic_karen_page",
+      "breakpoints": true
     }
   ]
 }
