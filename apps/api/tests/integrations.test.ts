@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'bun:test';
 import { Elysia } from 'elysia';
 import { config } from '@client-agent/config';
-import { getOwnerUserId, getIntegration, deleteIntegration } from '@client-agent/db';
+import { getOwnerUserId, getIntegration, deleteIntegration, upsertIntegration } from '@client-agent/db';
 import { app } from '../src/app';
 import { createIntegrationRoutes, type IntegrationDeps } from '../src/routes/integrations';
 
@@ -21,7 +21,15 @@ const deps: IntegrationDeps = {
 
 // isAuth validates the cookie against Redis, so the suite logs in once and reuses the real session.
 let sessionCookie = '';
+let originalDiscord: Awaited<ReturnType<typeof getIntegration>> = null;
+let originalGmail: Awaited<ReturnType<typeof getIntegration>> = null;
+
 beforeAll(async () => {
+  originalDiscord = await getIntegration(ownerId, 'discord');
+  originalGmail = await getIntegration(ownerId, 'gmail');
+  await deleteIntegration(ownerId, 'gmail');
+  await deleteIntegration(ownerId, 'discord');
+
   const res = await app.handle(new Request('http://localhost/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -33,6 +41,23 @@ beforeAll(async () => {
 afterAll(async () => {
   await deleteIntegration(ownerId, 'gmail');
   await deleteIntegration(ownerId, 'discord');
+  if (originalDiscord) {
+    await upsertIntegration({
+      userId: ownerId,
+      provider: 'discord',
+      status: originalDiscord.status,
+      metadata: (originalDiscord.metadata ?? {}) as Record<string, unknown>,
+    });
+  }
+  if (originalGmail) {
+    await upsertIntegration({
+      userId: ownerId,
+      provider: 'gmail',
+      status: originalGmail.status,
+      credentialsEncrypted: originalGmail.credentialsEncrypted,
+      metadata: (originalGmail.metadata ?? {}) as Record<string, unknown>,
+    });
+  }
 });
 
 const routes = new Elysia().use(createIntegrationRoutes(deps));
