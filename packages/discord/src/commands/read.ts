@@ -59,7 +59,7 @@ export interface PendingConversationMessage {
 }
 
 export interface ReadInteractionDeps {
-  enqueue: (input: PendingConversationMessage) => Promise<void>;
+  enqueue: (input: PendingConversationMessage) => Promise<{ taskId: number } | void>;
 }
 
 export async function handleReadInteraction(

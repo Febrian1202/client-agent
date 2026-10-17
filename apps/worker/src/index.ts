@@ -11,6 +11,7 @@ import {
 } from './handlers/readVgenConversation';
 import { resolveDiscordNotifier } from './services/discord';
 import { resolveVgenWorkerDeps } from './services/vgen';
+import { startWorkerDiscordBot } from './bot';
 
 const WORKER_ID = process.env.WORKER_ID || `worker-${process.pid}`;
 const CONSUMER_GROUP = 'client_agent_workers';
@@ -21,6 +22,13 @@ const redis = createRedisClient();
 
 if ((await resolveDiscordNotifier()) === null) {
   console.warn('[worker] Discord integration not configured - NOTIFY_DISCORD tasks will fail');
+}
+
+const botHandle = await startWorkerDiscordBot();
+if (botHandle) {
+  console.log('[worker] Discord bot started - /read command available');
+} else {
+  console.log('[worker] Discord bot not configured (DISCORD_BOT_TOKEN / DISCORD_APPLICATION_ID missing)');
 }
 
 const { shutdown } = await startWorker({
@@ -57,8 +65,11 @@ const { shutdown } = await startWorker({
 
 async function shutdownAndExit() {
   console.log('\n🛑 Worker received shutdown signal. Exiting gracefully...');
-  await shutdown(15000);
+  if (botHandle) {
+    await botHandle.stop();
+  }
   await closeSharedBrowserContext();
+  await shutdown(15000);
   redis.disconnect();
   await dbClient.end();
   process.exit(0);

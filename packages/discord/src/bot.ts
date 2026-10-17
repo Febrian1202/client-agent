@@ -1,11 +1,13 @@
 import {
   Client,
   GatewayIntentBits,
+  REST,
   Routes,
   type ChatInputCommandInteraction,
   type Interaction,
-  type REST,
 } from 'discord.js';
+
+export { REST };
 
 export interface BotOptions {
   token: string;
