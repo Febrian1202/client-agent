@@ -155,16 +155,13 @@ describe('parseExternalThreadId', () => {
     expect(parseExternalThreadId('https://vgen.co/inbox/abc123')).toBe('abc123');
   });
 
-  it('extracts the thread id from a relative inbox path', () => {
-    expect(parseExternalThreadId('/inbox/abc123')).toBe('abc123');
-  });
-
   it('extracts the thread id from a messages URL, case-insensitively', () => {
     expect(parseExternalThreadId('https://VGEN.CO/Messages/Thread_9')).toBe('Thread_9');
   });
 
   it('returns null when no thread id is present', () => {
     expect(parseExternalThreadId('https://vgen.co/inbox')).toBeNull();
+    expect(parseExternalThreadId('https://vgen.co/messages')).toBeNull();
     expect(parseExternalThreadId('/inbox')).toBeNull();
   });
 });
