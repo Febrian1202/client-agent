@@ -26,8 +26,8 @@ async function main() {
   try {
     const adapter = new VGenBrowserAdapter({
       createPage: async () => page,
-      closePage: async (p) => {
-        await p.close();
+      closePage: async () => {
+        // Keep page open for potential --dump inspection; closed in outer finally
       },
     });
 
@@ -45,6 +45,9 @@ async function main() {
       }
     }
   } finally {
+    try {
+      await page.close();
+    } catch {}
     await ctx.close();
   }
 }
