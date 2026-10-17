@@ -54,6 +54,8 @@
       "name": "@client-agent/worker",
       "version": "0.1.0",
       "dependencies": {
+        "@client-agent/agent": "workspace:*",
+        "@client-agent/ai": "workspace:*",
         "@client-agent/browser": "workspace:*",
         "@client-agent/config": "workspace:*",
         "@client-agent/db": "workspace:*",
@@ -66,6 +68,25 @@
       },
       "devDependencies": {
         "drizzle-orm": "^0.39.3",
+      },
+    },
+    "packages/agent": {
+      "name": "@client-agent/agent",
+      "version": "0.1.0",
+      "dependencies": {
+        "@client-agent/ai": "workspace:*",
+        "@client-agent/config": "workspace:*",
+        "@client-agent/db": "workspace:*",
+        "@client-agent/domain": "workspace:*",
+        "@client-agent/platform": "workspace:*",
+        "zod": "^3.24.2",
+      },
+    },
+    "packages/ai": {
+      "name": "@client-agent/ai",
+      "version": "0.1.0",
+      "dependencies": {
+        "@client-agent/config": "workspace:*",
       },
     },
     "packages/browser": {
@@ -150,6 +171,10 @@
   },
   "packages": {
     "@borewit/text-codec": ["@borewit/text-codec@0.2.2", "", {}, "sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ=="],
+
+    "@client-agent/agent": ["@client-agent/agent@workspace:packages/agent"],
+
+    "@client-agent/ai": ["@client-agent/ai@workspace:packages/ai"],
 
     "@client-agent/api": ["@client-agent/api@workspace:apps/api"],
 

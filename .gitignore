@@ -15,6 +15,7 @@ build/
 *.tsbuildinfo
 
 # Browser Automation & Profiles (Playwright)
+browser-profile
 browser-profile/
 .playwright/
 test-results/
