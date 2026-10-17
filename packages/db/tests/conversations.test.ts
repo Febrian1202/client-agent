@@ -12,6 +12,7 @@ const messageSuffix = `msg-${suffix}`;
 
 let clientId = 0;
 let conversationId = 0;
+let auditLogId = 0;
 
 beforeAll(async () => {
   const userId = await getOwnerUserId();
@@ -24,7 +25,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (conversationId) await db.delete(messages).where(eq(messages.conversationId, conversationId));
   await db.delete(conversations).where(eq(conversations.externalId, platformExternalId));
-  await db.delete(auditLogs);
+  if (auditLogId) await db.delete(auditLogs).where(eq(auditLogs.id, auditLogId));
   await db.delete(clients).where(eq(clients.username, username));
 });
 
@@ -80,6 +81,7 @@ describe('Phase 3 schema: conversations, messages, audit_logs', () => {
       })
       .returning();
     expect(row!.action).toBe('AGENT_READ_CONVERSATION');
+    auditLogId = row!.id;
     expect(row!).not.toHaveProperty('updatedAt');
   });
 });
