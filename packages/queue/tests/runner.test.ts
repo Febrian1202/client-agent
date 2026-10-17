@@ -14,6 +14,8 @@ import {
   publishTask,
   runTask,
   clearRetries,
+  pollDueRetries,
+  NonRetriableError,
   STREAMS,
 } from '../src';
 
@@ -132,6 +134,50 @@ describe('Task Runner State Machine', () => {
     // Verify ACKed (stream not poisoned)
     const pending = await redis.xpending(testStream, testGroup);
     expect(pending[0]).toBe(0);
+  });
+
+  it('dead-letters NonRetriableError immediately without retry or backoff (Task 7)', async () => {
+    ownerId = await getOwnerUserId();
+    await clearRetries(redis);
+    const task = await createTask({
+      userId: ownerId,
+      type: TaskType.PROCESS_GMAIL_EVENT,
+      input: { nonRetriableTest: true },
+    });
+    createdTaskIds.push(task.id);
+
+    const messageId = await publishTask(testStream, { taskId: String(task.id) });
+
+    let deadLetterAlertTriggered = false;
+    const result = await runTask({
+      redis,
+      stream: testStream,
+      group: testGroup,
+      task: { id: messageId, data: { taskId: String(task.id) } },
+      retryDelays: [50, 100],
+      onDeadLetter: async () => {
+        deadLetterAlertTriggered = true;
+      },
+      handler: async () => {
+        throw new NonRetriableError('boom-pause');
+      },
+    });
+
+    expect(result.status).toBe('dead');
+    expect(result.reason).toBe('non_retriable');
+    const updated = await getTaskById(task.id);
+    expect(updated!.status).toBe(TaskStatus.DEAD);
+    expect(updated!.attempts).toBe(1);
+    expect(updated!.error).toContain('boom-pause');
+
+    expect(deadLetterAlertTriggered).toBeTrue();
+
+    // Verify ACKed (no pending items)
+    const pending = await redis.xpending(testStream, testGroup);
+    expect(pending[0]).toBe(0);
+
+    // Verify NO retry was scheduled
+    expect(await pollDueRetries(redis)).toBe(0);
   });
 
   it('safely ACKs and skips invalid stream payload without crashing (Review Focus #1)', async () => {

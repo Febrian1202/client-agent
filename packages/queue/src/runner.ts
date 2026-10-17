@@ -9,6 +9,7 @@ import {
 } from '@client-agent/db';
 import { TaskStatus } from '@client-agent/domain';
 import { calculateBackoffDelay, scheduleRetry } from './retry';
+import { NonRetriableError } from './errors';
 
 export type TaskHandler<TOutput = unknown> = (task: ParsedTask) => Promise<TOutput>;
 
@@ -28,7 +29,12 @@ export interface TaskExecutionResult {
   attempts?: number;
   delayMs?: number;
   error?: string;
-  reason?: 'invalid_payload' | 'not_found' | 'already_completed' | 'already_dead';
+  reason?:
+    | 'invalid_payload'
+    | 'not_found'
+    | 'already_completed'
+    | 'already_dead'
+    | 'non_retriable';
 }
 
 export async function runTask(options: RunTaskOptions): Promise<TaskExecutionResult> {
@@ -77,6 +83,19 @@ export async function runTask(options: RunTaskOptions): Promise<TaskExecutionRes
     return { status: 'completed', output };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof NonRetriableError) {
+      console.error(`[queue:runner] Non-retriable failure for task ${taskId}: ${errorMsg}`);
+      await markTaskDead(taskId, errorMsg);
+      await redis.xack(stream, group, task.id);
+      if (onDeadLetter) {
+        try {
+          await onDeadLetter(task, errorMsg);
+        } catch (deadLetterErr) {
+          console.error('[queue:runner] Error in onDeadLetter callback:', deadLetterErr);
+        }
+      }
+      return { status: 'dead', reason: 'non_retriable', attempts: runningTask.attempts, error: errorMsg };
+    }
     if (runningTask.attempts < runningTask.maxAttempts) {
       await markTaskFailed(taskId, errorMsg);
       const delay = calculateBackoffDelay(runningTask.attempts, retryDelays);

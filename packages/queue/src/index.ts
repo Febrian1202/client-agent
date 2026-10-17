@@ -3,6 +3,7 @@ export * from './connection';
 export * from './producer';
 export * from './consumer';
 export * from './retry';
+export * from './errors';
 export * from './runner';
 export * from './idempotency';
 export * from './recovery';
