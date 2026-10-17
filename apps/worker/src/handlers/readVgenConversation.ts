@@ -74,7 +74,15 @@ export async function runConversationRead(
         targetId: taskId,
         metadata: { clientUsername: input.clientUsername },
       });
-      if (deps.messenger && input.discord?.channelId) {
+      if (deps.messenger && input.discord?.interactionToken && input.discord?.applicationId) {
+        try {
+          await deps.messenger.editInteractionFollowup({
+            applicationId: input.discord.applicationId,
+            interactionToken: input.discord.interactionToken,
+            content: SESSION_EXPIRED_MESSAGE,
+          });
+        } catch {}
+      } else if (deps.messenger && input.discord?.channelId) {
         try {
           await deps.messenger.sendChannelMessage(input.discord.channelId, SESSION_EXPIRED_MESSAGE);
         } catch {
@@ -84,7 +92,30 @@ export async function runConversationRead(
       throw new NonRetriableError('VGen session expired — awaiting manual re-auth');
     }
     if (err instanceof ClientNotFoundError) {
+      const notFoundMessage = `⚠️ Client @${input.clientUsername} was not found on VGen.`;
+      if (deps.messenger && input.discord?.interactionToken && input.discord?.applicationId) {
+        try {
+          await deps.messenger.editInteractionFollowup({
+            applicationId: input.discord.applicationId,
+            interactionToken: input.discord.interactionToken,
+            content: notFoundMessage,
+          });
+        } catch {}
+      } else if (deps.messenger && input.discord?.channelId) {
+        try {
+          await deps.messenger.sendChannelMessage(input.discord.channelId, notFoundMessage);
+        } catch {}
+      }
       throw new NonRetriableError(err.message);
+    }
+    if (deps.messenger && input.discord?.interactionToken && input.discord?.applicationId) {
+      try {
+        await deps.messenger.editInteractionFollowup({
+          applicationId: input.discord.applicationId,
+          interactionToken: input.discord.interactionToken,
+          content: `⚠️ Error fetching conversation for @${input.clientUsername}: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      } catch {}
     }
     throw err;
   }
