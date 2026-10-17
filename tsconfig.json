@@ -27,7 +27,13 @@
       "@client-agent/gmail": ["./packages/gmail/src/index.ts"],
       "@client-agent/gmail/*": ["./packages/gmail/src/*"],
       "@client-agent/discord": ["./packages/discord/src/index.ts"],
-      "@client-agent/discord/*": ["./packages/discord/src/*"]
+      "@client-agent/discord/*": ["./packages/discord/src/*"],
+      "@client-agent/platform": ["./packages/platform/src/index.ts"],
+      "@client-agent/platform/*": ["./packages/platform/src/*"],
+      "@client-agent/browser": ["./packages/browser/src/index.ts"],
+      "@client-agent/browser/*": ["./packages/browser/src/*"],
+      "@client-agent/vgen": ["./packages/vgen/src/index.ts"],
+      "@client-agent/vgen/*": ["./packages/vgen/src/*"]
     }
   },
   "include": [
