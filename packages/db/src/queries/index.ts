@@ -3,3 +3,6 @@ export * from './events';
 export * from './tasks';
 export * from './clients';
 export * from './integrations';
+export * from './conversations';
+export * from './messages';
+export * from './audits';
