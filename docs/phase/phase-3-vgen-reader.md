@@ -48,7 +48,7 @@ Discord Bot sends summary of retrieved conversation to creator
 ## Atomic Task Breakdown
 
 ### Task 3.1: Database Schemas for Conversations and Messages
-- [ ] In `packages/db/src/schema/conversations.ts`, define `conversations` table:
+- [x] In `packages/db/src/schema/conversations.ts`, define `conversations` table:
   - `id`: `bigserial` primary key
   - `client_id`: `bigint` references `clients(id)`
   - `platform`: `text` default `'vgen'`
@@ -58,7 +58,7 @@ Discord Bot sends summary of retrieved conversation to creator
   - `last_synced_at`: `timestamp with time zone`
   - `created_at`, `updated_at`: `timestamp with time zone`
   - Unique constraint: `UNIQUE(platform, external_id)`
-- [ ] In `packages/db/src/schema/messages.ts`, define `messages` table:
+- [x] In `packages/db/src/schema/messages.ts`, define `messages` table:
   - `id`: `bigserial` primary key
   - `conversation_id`: `bigint` references `conversations(id)`
   - `external_id`: `text` nullable (VGen message identifier or deterministic hash)
@@ -70,18 +70,18 @@ Discord Bot sends summary of retrieved conversation to creator
   - `sent_at`: `timestamp with time zone`
   - `created_at`, `updated_at`: `timestamp with time zone`
   - Unique constraint: `UNIQUE(conversation_id, external_id)`
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 3.2: `packages/browser` (Playwright Session Manager)
-- [ ] Create `packages/browser/package.json` (name: `@client-agent/browser`) with `playwright`.
-- [ ] Implement Browser Context Manager (`src/context.ts`):
+- [x] Create `packages/browser/package.json` (name: `@client-agent/browser`) with `playwright`.
+- [x] Implement Browser Context Manager (`src/context.ts`):
   - Read `BROWSER_PROFILE_PATH` from `@client-agent/config`.
   - Provide helper `launchPersistentContext()`:
     - Launches Chromium using `chromium.launchPersistentContext(profilePath, { headless: true, ... })`.
     - Configures standard user agent and viewport.
-- [ ] Implement Session Expiry Checker (`src/session.ts`):
+- [x] Implement Session Expiry Checker (`src/session.ts`):
   - Function `checkVGenAuthStatus(page: Page): Promise<boolean>`
   - Navigates to `https://vgen.co/dashboard` or messages URL.
   - If redirected to `/login` or auth prompts are visible, returns `false`.
@@ -90,7 +90,7 @@ Discord Bot sends summary of retrieved conversation to creator
 ---
 
 ### Task 3.3: `packages/platform` (Platform Adapter Contract)
-- [ ] Create `packages/domain/src/platform.ts` or `packages/platform/package.json` (name: `@client-agent/platform`):
+- [x] Create `packages/domain/src/platform.ts` or `packages/platform/package.json` (name: `@client-agent/platform`):
   - Define core contracts:
     ```ts
     export interface FindClientInput { username: string; }
@@ -122,8 +122,8 @@ Discord Bot sends summary of retrieved conversation to creator
 ---
 
 ### Task 3.4: `packages/vgen` (VGen Browser Adapter Implementation)
-- [ ] Create `packages/vgen/package.json` (name: `@client-agent/vgen`).
-- [ ] Implement `VGenBrowserAdapter` implementing `PlatformAdapter`:
+- [x] Create `packages/vgen/package.json` (name: `@client-agent/vgen`).
+- [x] Implement `VGenBrowserAdapter` implementing `PlatformAdapter`:
   - `getConversation({ clientUsername, limit = 20 })`:
     1. Acquire page from persistent context.
     2. Check auth status. If invalid, throw `SessionExpiredError`.
@@ -132,12 +132,12 @@ Discord Bot sends summary of retrieved conversation to creator
     5. Extract thread external ID from URL.
     6. Scrape recent messages from DOM (sender, text, timestamp).
     7. Return normalized `ConversationResult`.
-- [ ] Provide clear error types: `ClientNotFoundError`, `SessionExpiredError`, `NavigationTimeoutError`.
+- [x] Provide clear error types: `ClientNotFoundError`, `SessionExpiredError`, `NavigationTimeoutError`.
 
 ---
 
 ### Task 3.5: Worker Task Handler: `READ_VGEN_CONVERSATION`
-- [ ] In `apps/worker/src/handlers/readVgenConversation.ts`:
+- [x] In `apps/worker/src/handlers/readVgenConversation.ts`:
   - Input: `{ clientUsername: string, requestedBy: 'discord' | 'web' }`
   - Call `vgenAdapter.getConversation({ clientUsername })`.
   - Handle `SessionExpiredError`:
@@ -153,7 +153,7 @@ Discord Bot sends summary of retrieved conversation to creator
 ---
 
 ### Task 3.6: Discord Command: `/read <username>`
-- [ ] In `packages/discord/src/commands/read.ts`:
+- [x] In `packages/discord/src/commands/read.ts`:
   - Register slash command `/read <username>` in Discord application.
   - On interaction:
     - Respond immediately with deferred reply: `"Fetching conversation for @" + username + "... ⏳"`.
@@ -194,8 +194,8 @@ Discord Bot sends summary of retrieved conversation to creator
 ---
 
 ## Done When Checklist
-- [ ] `packages/platform` cleanly decouples domain logic from browser automation details.
-- [ ] `packages/vgen` retrieves real conversation messages for a specified client username.
-- [ ] Retrieved messages are saved to PostgreSQL without duplicates on repeated reads.
-- [ ] Session expiry is reliably detected, triggers an alert, and pauses gracefully.
-- [ ] Discord `/read <username>` command returns the latest messages directly in the channel.
+- [x] `packages/platform` cleanly decouples domain logic from browser automation details.
+- [x] `packages/vgen` retrieves real conversation messages for a specified client username.
+- [x] Retrieved messages are saved to PostgreSQL without duplicates on repeated reads.
+- [x] Session expiry is reliably detected, triggers an alert, and pauses gracefully.
+- [x] Discord `/read <username>` command returns the latest messages directly in the channel.
