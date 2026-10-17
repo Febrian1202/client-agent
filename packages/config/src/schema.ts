@@ -28,8 +28,11 @@ export const configSchema = z.object({
   DISCORD_APPLICATION_ID: z.string().optional(),
   DISCORD_GUILD_ID: z.string().optional(),
 
+  AI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
   AI_PROVIDER_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
+  AI_MODEL: z.string().default('gpt-4o'),
+  AI_TIMEOUT_MS: z.coerce.number().default(60000),
+  AI_MAX_RETRIES: z.coerce.number().default(2),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
