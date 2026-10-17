@@ -1,5 +1,6 @@
+import { desc, eq } from 'drizzle-orm';
 import { db } from '../client';
-import { messages } from '../schema';
+import { messages, type MessageRow } from '../schema';
 
 export interface NewMessageInput {
   externalId: string;
@@ -36,4 +37,16 @@ export async function insertMessagesIfNew(conversationId: number, inputs: NewMes
     inserted += rows.length;
   }
   return inserted;
+}
+
+export async function getMessagesByConversationId(conversationId: number, limit = 50): Promise<MessageRow[]> {
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(desc(messages.sentAt), desc(messages.id))
+    .limit(limit);
+
+  // Return in chronological order
+  return rows.reverse();
 }

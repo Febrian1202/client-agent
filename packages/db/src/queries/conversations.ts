@@ -40,6 +40,15 @@ export async function getConversationById(id: number): Promise<ConversationRow |
   return rows[0] ?? null;
 }
 
+export async function getConversationByClientId(clientId: number): Promise<ConversationRow | null> {
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.clientId, clientId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function touchConversationLastSynced(id: number): Promise<void> {
   const rows = await db
     .update(conversations)

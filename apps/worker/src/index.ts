@@ -9,8 +9,11 @@ import {
   handleReadVgenConversation,
   handleSyncConversation,
 } from './handlers/readVgenConversation';
+import { handleGenerateSummary } from './handlers/generateSummary';
+import { handleGenerateReplyDraft } from './handlers/generateReplyDraft';
 import { resolveDiscordNotifier } from './services/discord';
 import { resolveVgenWorkerDeps } from './services/vgen';
+import { resolveAiWorkerDeps } from './services/ai';
 import { startWorkerDiscordBot } from './bot';
 
 const WORKER_ID = process.env.WORKER_ID || `worker-${process.pid}`;
@@ -58,6 +61,20 @@ const { shutdown } = await startWorker({
         return type === String(TaskType.SYNC_CONVERSATION)
           ? handleSyncConversation(task, deps)
           : handleReadVgenConversation(task, deps);
+      },
+    },
+    {
+      stream: STREAMS.AGENT,
+      handler: async (task) => {
+        const deps = await resolveAiWorkerDeps();
+        const type = task.data.type;
+        if (type === String(TaskType.GENERATE_SUMMARY)) {
+          return handleGenerateSummary(task, deps);
+        }
+        if (type === String(TaskType.GENERATE_REPLY_DRAFT)) {
+          return handleGenerateReplyDraft(task, deps);
+        }
+        throw new Error(`AGENT stream received unsupported task type: ${type}`);
       },
     },
   ],

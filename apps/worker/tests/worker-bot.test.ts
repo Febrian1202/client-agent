@@ -41,7 +41,12 @@ mock.module('@client-agent/discord', () => ({
   ...realDiscord,
   registerSlashCommands: async (...args: RegisterSlashCommandsArgs) => {
     discordSpy.registrations.push(args[1]);
-    return await capturedRegisterSlashCommands(args[0], args[1]);
+    if (args[0] && typeof (args[0] as any).put === 'function') {
+      if (args[0] instanceof realDiscord.REST) {
+        return;
+      }
+      return await capturedRegisterSlashCommands(args[0], args[1]);
+    }
   },
   startDiscordBot: async (options: Record<string, unknown>) => {
     discordSpy.botStarts.push(options);
@@ -49,11 +54,12 @@ mock.module('@client-agent/discord', () => ({
   },
 }));
 
-const { resolveReadEnqueuer, startWorkerDiscordBot } = await import('../src/bot');
+const { resolveReadEnqueuer, resolveSummarizeEnqueuer, resolveReplyEnqueuer, startWorkerDiscordBot } = await import('../src/bot');
 
 const createdTaskIds: number[] = [];
 
 afterAll(async () => {
+  mock.module('@client-agent/discord', () => realDiscord);
   for (const id of createdTaskIds) {
     await db.delete(agentTasks).where(eq(agentTasks.id, id));
   }
@@ -166,5 +172,63 @@ describe('Worker Discord bot (/read pipeline)', () => {
     expect(handle).toBeNull();
     expect(discordSpy.registrations).toHaveLength(0);
     expect(discordSpy.botStarts).toHaveLength(0);
+  });
+
+  it('enqueues GENERATE_SUMMARY and GENERATE_REPLY_DRAFT to AGENT stream', async () => {
+    testDiscordEnv.DISCORD_BOT_TOKEN = 'bot-token-123';
+    testDiscordEnv.DISCORD_APPLICATION_ID = 'app-xyz';
+
+    const published: Array<{ stream: string; payload: Record<string, unknown> }> = [];
+    const publisher = async (stream: string, payload: Record<string, unknown>) => {
+      published.push({ stream, payload });
+      return 'entry-agent';
+    };
+
+    const summarizeEnqueue = await resolveSummarizeEnqueuer({ publisher });
+    expect(summarizeEnqueue).not.toBeNull();
+
+    const sumItxId = `itx-sum-${Date.now()}`;
+    const sumRes = (await summarizeEnqueue!({
+      clientUsername: 'erianosamu',
+      interactionId: sumItxId,
+      interactionToken: 'tok-sum',
+      applicationId: 'app-xyz',
+      channelId: 'chan-sum',
+    })) as unknown as { taskId: number };
+
+    createdTaskIds.push(sumRes.taskId);
+    expect(published).toContainEqual({
+      stream: STREAMS.AGENT,
+      payload: { type: String(TaskType.GENERATE_SUMMARY), taskId: String(sumRes.taskId) },
+    });
+
+    const replyEnqueue = await resolveReplyEnqueuer({ publisher });
+    expect(replyEnqueue).not.toBeNull();
+
+    const replyItxId = `itx-reply-${Date.now()}`;
+    const replyRes = (await replyEnqueue!({
+      clientUsername: 'erianosamu',
+      instruction: 'Say choker is ready',
+      interactionId: replyItxId,
+      interactionToken: 'tok-rep',
+      applicationId: 'app-xyz',
+      channelId: 'chan-rep',
+    })) as unknown as { taskId: number };
+
+    createdTaskIds.push(replyRes.taskId);
+    expect(published).toContainEqual({
+      stream: STREAMS.AGENT,
+      payload: { type: String(TaskType.GENERATE_REPLY_DRAFT), taskId: String(replyRes.taskId) },
+    });
+
+    // Start bot and verify all 3 commands are registered
+    discordSpy.registrations = [];
+    const handle = await startWorkerDiscordBot({ publisher });
+    expect(handle).not.toBeNull();
+    expect(discordSpy.registrations).toHaveLength(1);
+    const registeredCommands = (discordSpy.registrations[0]!.commands as any[]).map((c) => c.name);
+    expect(registeredCommands).toContain('read');
+    expect(registeredCommands).toContain('summarize');
+    expect(registeredCommands).toContain('reply');
   });
 });

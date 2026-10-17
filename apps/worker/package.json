@@ -17,7 +17,9 @@
     "@client-agent/platform": "workspace:*",
     "@client-agent/queue": "workspace:*",
     "@client-agent/shared": "workspace:*",
-    "@client-agent/vgen": "workspace:*"
+    "@client-agent/vgen": "workspace:*",
+    "@client-agent/ai": "workspace:*",
+    "@client-agent/agent": "workspace:*"
   },
   "devDependencies": {
     "drizzle-orm": "^0.39.3"
