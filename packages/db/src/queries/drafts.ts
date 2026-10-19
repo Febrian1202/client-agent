@@ -1,4 +1,17 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
+import {
+  type Draft,
+  type Approval,
+  type DraftRepository,
+  type CreateDraftInput,
+  type UpdateDraftInput,
+  type InsertApprovalInput,
+  type InsertAuditLogInput as DomainAuditLogInput,
+  DraftStatus,
+  ApprovalAction,
+  ApprovalStatus,
+  DraftService,
+} from '@client-agent/domain';
 import { db } from '../client';
 import {
   approvals,
@@ -10,6 +23,7 @@ import {
   type InsertApprovalRow,
   type InsertDraftRow,
 } from '../schema';
+import { insertAuditLog } from './audits';
 
 export interface ListDraftsFilter {
   status?: string;
@@ -120,3 +134,90 @@ export async function getDraftWithContext(id: number): Promise<DraftWithContext 
     approvals: activeApprovals,
   };
 }
+
+function mapDraftRowToEntity(row: DraftRow): Draft {
+  return {
+    id: row.id,
+    conversationId: row.conversationId,
+    agentRunId: row.agentRunId,
+    content: row.content,
+    status: row.status as DraftStatus,
+    approvedBy: row.approvedBy,
+    approvedAt: row.approvedAt,
+    sentAt: row.sentAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function mapApprovalRowToEntity(row: ApprovalRow): Approval {
+  return {
+    id: row.id,
+    draftId: row.draftId,
+    userId: row.userId,
+    action: row.action as ApprovalAction,
+    status: row.status as ApprovalStatus,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export function createDbDraftRepository(): DraftRepository {
+  return {
+    async getDraftById(id: number): Promise<Draft | null> {
+      const row = await getDraftById(id);
+      return row ? mapDraftRowToEntity(row) : null;
+    },
+
+    async createDraft(data: CreateDraftInput): Promise<Draft> {
+      const row = await insertDraft({
+        conversationId: data.conversationId,
+        content: data.content,
+        agentRunId: data.agentRunId ?? null,
+        status: data.status ?? DraftStatus.PENDING_APPROVAL,
+      });
+      return mapDraftRowToEntity(row);
+    },
+
+    async updateDraft(id: number, data: UpdateDraftInput): Promise<Draft | null> {
+      const updateData: Partial<InsertDraftRow> = {};
+      if (data.content !== undefined) updateData.content = data.content;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.approvedBy !== undefined) updateData.approvedBy = data.approvedBy;
+      if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt;
+      if (data.sentAt !== undefined) updateData.sentAt = data.sentAt;
+
+      const row = await updateDraft(id, updateData);
+      return row ? mapDraftRowToEntity(row) : null;
+    },
+
+    async insertApproval(data: InsertApprovalInput): Promise<Approval> {
+      const row = await insertApproval({
+        draftId: data.draftId,
+        userId: data.userId,
+        action: data.action,
+        status: data.status,
+      });
+      return mapApprovalRowToEntity(row);
+    },
+
+    async revokeApprovalsForDraft(draftId: number): Promise<void> {
+      await revokeApprovalsForDraft(draftId);
+    },
+
+    async insertAuditLog(log: DomainAuditLogInput): Promise<void> {
+      await insertAuditLog({
+        userId: log.userId,
+        actorType: log.actorType,
+        actorId: log.actorId,
+        action: log.action,
+        targetType: log.targetType,
+        targetId: log.targetId,
+        metadata: log.metadata,
+      });
+    },
+  };
+}
+
+export const draftService = new DraftService(createDbDraftRepository());
+

@@ -27,6 +27,16 @@ export enum DraftStatus {
   EXPIRED = 'expired',
 }
 
+export enum ApprovalAction {
+  APPROVE = 'approve',
+  REJECT = 'reject',
+}
+
+export enum ApprovalStatus {
+  ACTIVE = 'active',
+  REVOKED = 'revoked',
+}
+
 export enum CommissionStatus {
   REQUESTED = 'requested',
   ACCEPTED = 'accepted',
@@ -44,6 +54,7 @@ export enum EventStatus {
 }
 
 export enum AuditAction {
+  USER_CREATED_DRAFT = 'USER_CREATED_DRAFT',
   USER_APPROVED_DRAFT = 'USER_APPROVED_DRAFT',
   USER_REJECTED_DRAFT = 'USER_REJECTED_DRAFT',
   USER_EDITED_DRAFT = 'USER_EDITED_DRAFT',

@@ -1,5 +1,6 @@
 import { describe, expect, it, afterAll } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import { DraftStatus } from '@client-agent/domain';
 import {
   db,
   getOwnerUserId,
@@ -13,6 +14,8 @@ import {
   revokeApprovalsForDraft,
   getApprovalsByDraftId,
   getDraftWithContext,
+  createDbDraftRepository,
+  draftService,
   approvals,
   drafts,
   conversations,
@@ -111,5 +114,60 @@ describe('drafts and approvals schema & queries', () => {
     expect(resetDraft?.status).toBe('pending_approval');
     expect(resetDraft?.content).toBe('Updated draft content');
     expect(resetDraft?.approvedBy).toBeNull();
+  });
+
+  it('integrates with DraftService via createDbDraftRepository', async () => {
+    const ownerId = await getOwnerUserId();
+    const client = await insertClient({
+      userId: ownerId,
+      platform: 'vgen',
+      username: `service_client_${Date.now()}`,
+    });
+
+    const conv = await insertConversation({
+      clientId: client.id,
+      platform: 'vgen',
+      externalId: `service_conv_${Date.now()}`,
+    });
+
+    const repo = createDbDraftRepository();
+    expect(repo).toBeDefined();
+
+    const createdDraft = await draftService.createDraft({
+      conversationId: conv.id,
+      content: 'Initial generated draft message',
+      userId: ownerId,
+    });
+    expect(createdDraft.id).toBeDefined();
+    expect(createdDraft.status).toBe(DraftStatus.PENDING_APPROVAL);
+
+    const approvedDraft = await draftService.approveDraft({
+      draftId: createdDraft.id,
+      userId: ownerId,
+    });
+    expect(approvedDraft.status).toBe(DraftStatus.APPROVED);
+    expect(approvedDraft.approvedBy).toBe(ownerId);
+
+    const editedDraft = await draftService.updateDraftContent({
+      draftId: createdDraft.id,
+      newContent: 'Edited message text',
+      userId: ownerId,
+    });
+    expect(editedDraft.status).toBe(DraftStatus.PENDING_APPROVAL);
+    expect(editedDraft.content).toBe('Edited message text');
+    expect(editedDraft.approvedBy).toBeNull();
+
+    const rejectedDraft = await draftService.rejectDraft({
+      draftId: createdDraft.id,
+      userId: ownerId,
+      reason: 'Not good enough',
+    });
+    expect(rejectedDraft.status).toBe(DraftStatus.REJECTED);
+
+    // Clean up
+    await db.delete(approvals).where(eq(approvals.draftId, createdDraft.id));
+    await db.delete(drafts).where(eq(drafts.id, createdDraft.id));
+    await db.delete(conversations).where(eq(conversations.id, conv.id));
+    await db.delete(clients).where(eq(clients.id, client.id));
   });
 });

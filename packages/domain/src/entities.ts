@@ -1,4 +1,6 @@
 import type {
+  ApprovalAction,
+  ApprovalStatus,
   CommissionStatus,
   DraftStatus,
   EventStatus,
@@ -135,8 +137,8 @@ export interface Approval {
   id: number;
   draftId: number;
   userId: number;
-  action: 'approve' | 'reject';
-  status: 'active' | 'revoked';
+  action: ApprovalAction | 'approve' | 'reject';
+  status: ApprovalStatus | 'active' | 'revoked';
   createdAt: Date;
   updatedAt: Date;
 }
