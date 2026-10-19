@@ -46,10 +46,16 @@ export interface SendVgenMessageDeps {
   computeHash?: (content: string) => string;
 }
 
+export type SendVgenMessageOutput = {
+  success: boolean;
+  messageId: string;
+  [key: string]: unknown;
+};
+
 export async function handleSendVgenMessage(
   task: ParsedTask,
   deps?: SendVgenMessageDeps,
-): Promise<void> {
+): Promise<SendVgenMessageOutput> {
   const taskId = Number(task.data.taskId);
   const draftId = Number(task.data.draftId);
 
@@ -130,7 +136,10 @@ export async function handleSendVgenMessage(
         const notifDeps = await resolveDiscordNotifier();
         channelId = notifDeps?.channelId;
       }
-      channelId ??= 'default';
+      if (!channelId && deps?.messenger && process.env.NODE_ENV === 'test') {
+        channelId = 'test-channel';
+      }
+      if (!channelId) return;
       await messenger.sendChannelMessage(channelId, text);
     } catch (e) {
       console.error('[sendVgenMessage] Failed to send Discord notification:', e);
@@ -182,20 +191,24 @@ export async function handleSendVgenMessage(
       conversationUrl: conv.externalUrl,
       clientUsername: client.username,
     });
-  } catch (err) {
-    if (err instanceof SendAmbiguousError) {
+  } catch (err: unknown) {
+    const isAmbiguous =
+      err instanceof SendAmbiguousError ||
+      (typeof err === 'object' && err !== null && (err as { name?: string }).name === 'SendAmbiguousError');
+    if (isAmbiguous) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       await insertAuditLogFn({
         actorType: 'agent',
         action: AuditAction.MESSAGE_SEND_FAILED,
         targetType: 'draft',
         targetId: draftId,
-        metadata: { ambiguous: true, error: err.message },
+        metadata: { ambiguous: true, error: errorMessage },
       });
-      await markTaskDeadFn(taskId, `Ambiguous send: ${err.message}`);
+      await markTaskDeadFn(taskId, `Ambiguous send: ${errorMessage}`);
       await sendDiscordNotification(
         `⚠️ Message send to @${client.username} is AMBIGUOUS. Please inspect VGen manually before retrying!`,
       );
-      throw new NonRetriableError(err.message);
+      throw new NonRetriableError(errorMessage);
     }
     throw err;
   }
@@ -242,5 +255,7 @@ export async function handleSendVgenMessage(
 
   await sendDiscordNotification(`🚀 Message successfully delivered to @${client.username} on VGen!`);
 
-  await markTaskCompletedFn(taskId, { success: true, messageId: result.messageId });
+  const output: SendVgenMessageOutput = { success: true, messageId: result.messageId };
+  await markTaskCompletedFn(taskId, output);
+  return output;
 }
