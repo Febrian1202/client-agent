@@ -41,6 +41,62 @@ describe('Interaction router', () => {
     expect(logs).toHaveLength(1);
     expect(String(logs[0]![1])).toContain('enqueue failed');
   });
+
+  it('dispatches button interactions when configured via options', async () => {
+    const seenButtons: string[] = [];
+    const router = createInteractionRouter({
+      commands: { read: async () => {} },
+      onButton: async (i: any) => { seenButtons.push(i.customId); },
+    });
+
+    const buttonInteraction: any = {
+      isChatInputCommand: () => false,
+      isButton: () => true,
+      isModalSubmit: () => false,
+      customId: 'approve_draft:10',
+    };
+
+    await router(buttonInteraction);
+    expect(seenButtons).toEqual(['approve_draft:10']);
+  });
+
+  it('dispatches modal submit interactions when configured via options', async () => {
+    const seenModals: string[] = [];
+    const router = createInteractionRouter({
+      commands: { read: async () => {} },
+      onModalSubmit: async (i: any) => { seenModals.push(i.customId); },
+    });
+
+    const modalInteraction: any = {
+      isChatInputCommand: () => false,
+      isButton: () => false,
+      isModalSubmit: () => true,
+      customId: 'modal_edit_draft:10',
+    };
+
+    await router(modalInteraction);
+    expect(seenModals).toEqual(['modal_edit_draft:10']);
+  });
+
+  it('dispatches button interactions via prefix map', async () => {
+    const seen: string[] = [];
+    const router = createInteractionRouter({
+      commands: {},
+      buttons: {
+        approve_draft: async (i) => { seen.push(`approved:${i.customId}`); },
+      },
+    });
+
+    const buttonInteraction: any = {
+      isChatInputCommand: () => false,
+      isButton: () => true,
+      isModalSubmit: () => false,
+      customId: 'approve_draft:42',
+    };
+
+    await router(buttonInteraction);
+    expect(seen).toEqual(['approved:approve_draft:42']);
+  });
 });
 
 describe('Slash command registration', () => {

@@ -75,4 +75,40 @@ describe('Discord messenger', () => {
     expect(calls[0]!.route).toBe('/channels/chan-9/messages');
     expect((calls[0]!.body as { content: string }).content).toBe('Here is your preview 📨');
   });
+
+  it('includes components and embeds in editInteractionFollowup', async () => {
+    const { rest, calls } = stubRest();
+    const mockComponent = { toJSON: () => ({ type: 1, components: [] }) };
+    const mockEmbed = { toJSON: () => ({ title: 'Embed Title' }) };
+
+    await createDiscordNotifier({ token: 't', rest }).editInteractionFollowup({
+      applicationId: 'app-1',
+      interactionToken: 'tok-1',
+      content: 'Updated draft',
+      components: [mockComponent as any],
+      embeds: [mockEmbed as any],
+    });
+
+    expect(calls[0]!.route).toBe('/webhooks/app-1/tok-1/messages/@original');
+    const body = calls[0]!.body as any;
+    expect(body.content).toBe('Updated draft');
+    expect(body.components).toEqual([{ type: 1, components: [] }]);
+    expect(body.embeds).toEqual([{ title: 'Embed Title' }]);
+  });
+
+  it('includes components and embeds in sendChannelMessage options', async () => {
+    const { rest, calls } = stubRest();
+    const mockComponent = { toJSON: () => ({ type: 1, components: [] }) };
+
+    await createDiscordNotifier({ token: 't', rest }).sendChannelMessage('chan-9', 'Preview', {
+      components: [mockComponent as any],
+      embeds: [{ title: 'Plain Embed' }],
+    });
+
+    expect(calls[0]!.route).toBe('/channels/chan-9/messages');
+    const body = calls[0]!.body as any;
+    expect(body.content).toBe('Preview');
+    expect(body.components).toEqual([{ type: 1, components: [] }]);
+    expect(body.embeds).toEqual([{ title: 'Plain Embed' }]);
+  });
 });

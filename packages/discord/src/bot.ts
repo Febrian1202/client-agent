@@ -3,11 +3,25 @@ import {
   GatewayIntentBits,
   REST,
   Routes,
+  type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Interaction,
+  type ModalSubmitInteraction,
 } from 'discord.js';
 
 export { REST };
+
+export type CommandHandler = (interaction: ChatInputCommandInteraction) => Promise<void>;
+export type ButtonHandler = (interaction: ButtonInteraction) => Promise<void>;
+export type ModalSubmitHandler = (interaction: ModalSubmitInteraction) => Promise<void>;
+
+export interface InteractionRouterOptions {
+  commands?: Record<string, CommandHandler>;
+  buttons?: Record<string, ButtonHandler> | ButtonHandler;
+  modals?: Record<string, ModalSubmitHandler> | ModalSubmitHandler;
+  onButton?: ButtonHandler;
+  onModalSubmit?: ModalSubmitHandler;
+}
 
 export interface BotOptions {
   token: string;
@@ -55,16 +69,86 @@ export async function registerSlashCommands(
 }
 
 export function createInteractionRouter(
-  handlers: Record<string, (interaction: ChatInputCommandInteraction) => Promise<void>>,
+  handlersOrOptions:
+    | Record<string, CommandHandler>
+    | InteractionRouterOptions,
+  additionalOptions?: InteractionRouterOptions,
 ): (interaction: Interaction) => Promise<void> {
-  return async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-    const handler = handlers[interaction.commandName];
-    if (!handler) return;
-    try {
-      await handler(interaction);
-    } catch (err) {
-      console.error(`[discord:bot] Handler for /${interaction.commandName} failed:`, err);
+  const isOptionsObject =
+    'commands' in handlersOrOptions ||
+    'buttons' in handlersOrOptions ||
+    'modals' in handlersOrOptions ||
+    'onButton' in handlersOrOptions ||
+    'onModalSubmit' in handlersOrOptions;
+
+  const commandHandlers: Record<string, CommandHandler> = isOptionsObject
+    ? (handlersOrOptions as InteractionRouterOptions).commands ?? {}
+    : (handlersOrOptions as Record<string, CommandHandler>);
+
+  const buttonHandler: ButtonHandler | Record<string, ButtonHandler> | undefined =
+    additionalOptions?.onButton ??
+    additionalOptions?.buttons ??
+    (isOptionsObject
+      ? (handlersOrOptions as InteractionRouterOptions).onButton ??
+        (handlersOrOptions as InteractionRouterOptions).buttons
+      : undefined);
+
+  const modalHandler: ModalSubmitHandler | Record<string, ModalSubmitHandler> | undefined =
+    additionalOptions?.onModalSubmit ??
+    additionalOptions?.modals ??
+    (isOptionsObject
+      ? (handlersOrOptions as InteractionRouterOptions).onModalSubmit ??
+        (handlersOrOptions as InteractionRouterOptions).modals
+      : undefined);
+
+  return async (interaction: Interaction) => {
+    if (typeof (interaction as any).isChatInputCommand === 'function' && interaction.isChatInputCommand()) {
+      const handler = commandHandlers[interaction.commandName];
+      if (!handler) return;
+      try {
+        await handler(interaction);
+      } catch (err) {
+        console.error(`[discord:bot] Handler for /${interaction.commandName} failed:`, err);
+      }
+      return;
+    }
+
+    if (typeof (interaction as any).isButton === 'function' && interaction.isButton()) {
+      if (!buttonHandler) return;
+      try {
+        if (typeof buttonHandler === 'function') {
+          await buttonHandler(interaction);
+        } else {
+          const prefix = interaction.customId.split(':')[0];
+          const handler =
+            buttonHandler[interaction.customId] ?? (prefix ? buttonHandler[prefix] : undefined);
+          if (handler) {
+            await handler(interaction);
+          }
+        }
+      } catch (err) {
+        console.error(`[discord:bot] Handler for button ${interaction.customId} failed:`, err);
+      }
+      return;
+    }
+
+    if (typeof (interaction as any).isModalSubmit === 'function' && interaction.isModalSubmit()) {
+      if (!modalHandler) return;
+      try {
+        if (typeof modalHandler === 'function') {
+          await modalHandler(interaction);
+        } else {
+          const prefix = interaction.customId.split(':')[0];
+          const handler =
+            modalHandler[interaction.customId] ?? (prefix ? modalHandler[prefix] : undefined);
+          if (handler) {
+            await handler(interaction);
+          }
+        }
+      } catch (err) {
+        console.error(`[discord:bot] Handler for modal ${interaction.customId} failed:`, err);
+      }
+      return;
     }
   };
 }

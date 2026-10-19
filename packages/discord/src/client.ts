@@ -17,8 +17,17 @@ export interface DiscordMessenger {
     applicationId: string;
     interactionToken: string;
     content: string;
+    components?: unknown[];
+    embeds?: unknown[];
   }): Promise<{ messageId: string | null }>;
-  sendChannelMessage(channelId: string, content: string): Promise<{ messageId: string }>;
+  sendChannelMessage(
+    channelId: string,
+    content: string,
+    options?: {
+      components?: unknown[];
+      embeds?: unknown[];
+    },
+  ): Promise<{ messageId: string }>;
 }
 
 interface RestError extends Error {
@@ -55,11 +64,22 @@ export function createDiscordNotifier(options: {
       return { id: response.id, name: response.name };
     },
 
-    async editInteractionFollowup({ applicationId, interactionToken, content }) {
+    async editInteractionFollowup({ applicationId, interactionToken, content, components, embeds }) {
       try {
+        const body: Record<string, unknown> = { content };
+        if (components !== undefined) {
+          body.components = components.map((c) =>
+            c && typeof (c as any).toJSON === 'function' ? (c as any).toJSON() : c,
+          );
+        }
+        if (embeds !== undefined) {
+          body.embeds = embeds.map((e) =>
+            e && typeof (e as any).toJSON === 'function' ? (e as any).toJSON() : e,
+          );
+        }
         const response = (await rest.patch(
           `/webhooks/${applicationId}/${interactionToken}/messages/@original`,
-          { body: { content } },
+          { body },
         )) as { id: string | number };
         return { messageId: String(response.id) };
       } catch (err) {
@@ -68,9 +88,20 @@ export function createDiscordNotifier(options: {
       }
     },
 
-    async sendChannelMessage(channelId, content) {
+    async sendChannelMessage(channelId, content, options) {
+      const body: Record<string, unknown> = { content };
+      if (options?.components !== undefined) {
+        body.components = options.components.map((c) =>
+          c && typeof (c as any).toJSON === 'function' ? (c as any).toJSON() : c,
+        );
+      }
+      if (options?.embeds !== undefined) {
+        body.embeds = options.embeds.map((e) =>
+          e && typeof (e as any).toJSON === 'function' ? (e as any).toJSON() : e,
+        );
+      }
       const response = (await rest.post(`/channels/${channelId}/messages`, {
-        body: { content },
+        body,
       })) as { id: string | number };
       return { messageId: String(response.id) };
     },
