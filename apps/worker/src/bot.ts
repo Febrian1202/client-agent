@@ -1,5 +1,11 @@
 import { config } from '@client-agent/config';
-import { createTask, findTaskByIdempotencyKey, getOwnerUserId } from '@client-agent/db';
+import {
+  createTask,
+  draftService,
+  findTaskByIdempotencyKey,
+  getDraftById,
+  getOwnerUserId,
+} from '@client-agent/db';
 import { TaskType } from '@client-agent/domain';
 import { publishTask, STREAMS } from '@client-agent/queue';
 import {
@@ -8,12 +14,17 @@ import {
   REPLY_COMMAND,
   REST,
   createInteractionRouter,
+  handleDraftButtonInteraction,
+  handleDraftModalSubmitInteraction,
   handleReadInteraction,
   handleSummarizeInteraction,
   handleReplyInteraction,
   registerSlashCommands,
   startDiscordBot,
   type BotHandle,
+  type ButtonInteraction,
+  type DraftInteractionDeps,
+  type ModalSubmitInteraction,
   type ReadInteractionDeps,
   type SummarizeInteractionDeps,
   type ReplyDraftInteractionDeps,
@@ -21,6 +32,31 @@ import {
 
 export interface BotEnqueuerOptions {
   publisher?: (stream: string, payload: Record<string, unknown>) => Promise<string>;
+  draftDeps?: DraftInteractionDeps;
+}
+
+export function createDefaultDraftInteractionDeps(): DraftInteractionDeps {
+  return {
+    approveDraft: async ({ draftId, userId }) => {
+      const ownerId = await getOwnerUserId();
+      const resolvedUserId = typeof userId === 'number' ? userId : ownerId;
+      return await draftService.approveDraft({ draftId, userId: resolvedUserId });
+    },
+    rejectDraft: async ({ draftId, userId, reason }) => {
+      const ownerId = await getOwnerUserId();
+      const resolvedUserId = typeof userId === 'number' ? userId : ownerId;
+      return await draftService.rejectDraft({ draftId, userId: resolvedUserId, reason });
+    },
+    updateDraftContent: async ({ draftId, newContent, userId }) => {
+      const ownerId = await getOwnerUserId();
+      const resolvedUserId = typeof userId === 'number' ? userId : ownerId;
+      return await draftService.updateDraftContent({ draftId, newContent, userId: resolvedUserId });
+    },
+    getDraftContent: async (draftId) => {
+      const draft = await getDraftById(draftId);
+      return draft?.content;
+    },
+  };
 }
 
 export async function resolveReadEnqueuer(
@@ -149,6 +185,8 @@ export async function startWorkerDiscordBot(
 
   if (!readEnqueue || !summarizeEnqueue || !replyEnqueue) return null;
 
+  const draftDeps = options?.draftDeps ?? createDefaultDraftInteractionDeps();
+
   const commands = [READ_COMMAND, SUMMARIZE_COMMAND, REPLY_COMMAND];
 
   const rest = new REST({ version: '10' }).setToken(token);
@@ -164,9 +202,21 @@ export async function startWorkerDiscordBot(
     guildId: config.DISCORD_GUILD_ID,
     commands,
     onInteraction: createInteractionRouter({
-      read: (interaction) => handleReadInteraction(interaction, { enqueue: readEnqueue }),
-      summarize: (interaction) => handleSummarizeInteraction(interaction, { enqueue: summarizeEnqueue }),
-      reply: (interaction) => handleReplyInteraction(interaction, { enqueue: replyEnqueue }),
+      commands: {
+        read: (interaction) => handleReadInteraction(interaction, { enqueue: readEnqueue }),
+        summarize: (interaction) => handleSummarizeInteraction(interaction, { enqueue: summarizeEnqueue }),
+        reply: (interaction) => handleReplyInteraction(interaction, { enqueue: replyEnqueue }),
+      },
+      onButton: async (interaction: ButtonInteraction) => {
+        if (interaction.customId.includes('_draft:')) {
+          await handleDraftButtonInteraction(interaction, draftDeps);
+        }
+      },
+      onModalSubmit: async (interaction: ModalSubmitInteraction) => {
+        if (interaction.customId.startsWith('modal_edit_draft:')) {
+          await handleDraftModalSubmitInteraction(interaction, draftDeps);
+        }
+      },
     }),
   });
 }

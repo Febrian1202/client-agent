@@ -5,14 +5,22 @@ import {
   getOwnerUserId,
   getTaskById,
   insertAgentRun,
+  insertAuditLog,
+  insertDraft,
   markTaskCompleted,
   markTaskFailed,
   markTaskRunning,
+  upsertClient,
+  upsertConversation,
 } from '@client-agent/db';
-import { TaskStatus } from '@client-agent/domain';
+import { AuditAction, DraftStatus, TaskStatus } from '@client-agent/domain';
 import type { ParsedTask } from '@client-agent/queue';
 import type { OpenAICompatibleClient } from '@client-agent/ai';
-import { formatReplyDraftMessage, type DiscordMessenger } from '@client-agent/discord';
+import {
+  buildDraftActionRow,
+  formatReplyDraftMessage,
+  type DiscordMessenger,
+} from '@client-agent/discord';
 import {
   buildReplyPrompt,
   type ConversationContextForPrompt,
@@ -60,7 +68,7 @@ export async function handleGenerateReplyDraft(
   const startTime = Date.now();
   try {
     const ownerId = await getOwnerUserId();
-    const client = await getClientByUsername(ownerId, 'vgen', input.clientUsername);
+    let client = await getClientByUsername(ownerId, 'vgen', input.clientUsername);
 
     let messagesList: PromptMessageHistory[] = [];
     if (client) {
@@ -91,7 +99,7 @@ export async function handleGenerateReplyDraft(
 
     const content = aiResult.content ?? '(No draft reply generated)';
 
-    await insertAgentRun({
+    const agentRun = await insertAgentRun({
       taskId,
       provider: 'openai-compatible',
       model: aiResult.model,
@@ -105,7 +113,42 @@ export async function handleGenerateReplyDraft(
       status: 'success',
     });
 
+    if (!client) {
+      client = await upsertClient({
+        userId: ownerId,
+        platform: 'vgen',
+        username: input.clientUsername,
+      });
+    }
+
+    let conv = await getConversationByClientId(client.id);
+    if (!conv) {
+      conv = await upsertConversation({
+        clientId: client.id,
+        platform: 'vgen',
+        externalId: `vgen_${client.username}`,
+      });
+    }
+
+    const draft = await insertDraft({
+      conversationId: conv.id,
+      agentRunId: agentRun.id,
+      content,
+      status: DraftStatus.PENDING_APPROVAL,
+    });
+
+    await insertAuditLog({
+      userId: ownerId,
+      actorType: 'agent',
+      actorId: agentRun.id,
+      action: AuditAction.AGENT_GENERATED_DRAFT,
+      targetType: 'draft',
+      targetId: draft.id,
+      metadata: { taskId, conversationId: conv.id, agentRunId: agentRun.id },
+    });
+
     const formatted = formatReplyDraftMessage(input.clientUsername, content);
+    const actionRow = buildDraftActionRow(draft.id);
 
     if (deps.messenger && input.discord?.interactionToken && input.discord?.applicationId) {
       try {
@@ -113,13 +156,16 @@ export async function handleGenerateReplyDraft(
           applicationId: input.discord.applicationId,
           interactionToken: input.discord.interactionToken,
           content: formatted,
+          components: [actionRow],
         });
       } catch (err) {
         console.error('[worker:reply] Failed to edit interaction followup:', err);
       }
     } else if (deps.messenger && input.discord?.channelId) {
       try {
-        await deps.messenger.sendChannelMessage(input.discord.channelId, formatted);
+        await deps.messenger.sendChannelMessage(input.discord.channelId, formatted, {
+          components: [actionRow],
+        });
       } catch (err) {
         console.error('[worker:reply] Failed to send channel message:', err);
       }
@@ -127,6 +173,7 @@ export async function handleGenerateReplyDraft(
 
     await markTaskCompleted(taskId, {
       draft: content,
+      draftId: draft.id,
       totalTokens: aiResult.usage.totalTokens,
       durationMs: aiResult.durationMs,
     });

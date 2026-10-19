@@ -6,6 +6,7 @@ import {
   agentRuns,
   clients,
   conversations,
+  drafts,
   messages,
   createTask,
   getOwnerUserId,
@@ -33,6 +34,7 @@ const createdConversationIds: number[] = [];
 afterAll(async () => {
   if (createdConversationIds.length > 0) {
     await db.delete(messages).where(inArray(messages.conversationId, createdConversationIds));
+    await db.delete(drafts).where(inArray(drafts.conversationId, createdConversationIds));
     await db.delete(conversations).where(inArray(conversations.id, createdConversationIds));
   }
   if (createdClientIds.length > 0) {

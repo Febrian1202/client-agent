@@ -10,6 +10,12 @@ import {
 } from 'discord.js';
 
 export { REST };
+export type {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  Interaction,
+  ModalSubmitInteraction,
+};
 
 export type CommandHandler = (interaction: ChatInputCommandInteraction) => Promise<void>;
 export type ButtonHandler = (interaction: ButtonInteraction) => Promise<void>;
