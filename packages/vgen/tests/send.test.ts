@@ -245,5 +245,82 @@ describe('VGen Send Message Automation', () => {
       const username = await adapter.getAuthenticatedUsername(mockPage);
       expect(username).toBe('r1daz_');
     });
+
+    it('getAuthenticatedUsername navigates to dashboard when called without arguments', async () => {
+      let navigatedTo = '';
+      let pageClosed = false;
+      const mockPage: any = {
+        url: () => 'about:blank',
+        goto: async (url: string) => {
+          navigatedTo = url;
+        },
+        locator: (selector: string) => ({
+          first: () => ({
+            isVisible: async () => true,
+            innerText: async () => '@r1daz_',
+            getAttribute: async () => null,
+          }),
+        }),
+      };
+
+      const adapter = new VGenBrowserAdapter({
+        createPage: async () => mockPage,
+        closePage: async () => {
+          pageClosed = true;
+        },
+      });
+
+      const username = await adapter.getAuthenticatedUsername();
+      expect(username).toBe('r1daz_');
+      expect(navigatedTo).toBe('https://vgen.co/creator');
+      expect(pageClosed).toBe(true);
+    });
+  });
+
+  it('throws error when message content is empty', async () => {
+    const mockPage: any = {};
+    await expect(
+      sendMessageOnPage(mockPage, {
+        conversationUrl: 'https://vgen.co/inbox/thread-123',
+        content: '   ',
+      }),
+    ).rejects.toThrow('Cannot send empty message');
+  });
+
+  it('waits for new bubble when old bubble was initially present in post-send verification', async () => {
+    let attempts = 0;
+    const mockPage: any = {
+      url: () => 'https://vgen.co/inbox/thread-123',
+      goto: async () => {},
+      waitForLoadState: async () => {},
+      locator: (selector: string) => ({
+        first: () => ({
+          waitFor: async () => {},
+          fill: async () => {},
+          click: async () => {},
+          isVisible: async () => true,
+        }),
+        last: () => ({
+          waitFor: async () => {},
+          innerText: async () => {
+            attempts++;
+            if (attempts === 1) return 'Old message from client';
+            return 'New response content';
+          },
+          getAttribute: async (attr: string) => (attr === 'data-message-id' ? 'msg-new' : null),
+        }),
+        all: async () => [],
+      }),
+      waitForTimeout: async () => {},
+    };
+
+    const result = await sendMessageOnPage(mockPage, {
+      conversationUrl: 'https://vgen.co/inbox/thread-123',
+      content: 'New response content',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.messageId).toBe('msg-new');
+    expect(attempts).toBeGreaterThanOrEqual(2);
   });
 });

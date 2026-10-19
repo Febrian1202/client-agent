@@ -20,7 +20,10 @@ export async function sendMessageOnPage(
   page: Page,
   options: SendMessagePageOptions,
 ): Promise<SendMessageResult> {
-  const trimmedContent = options.content.trim();
+  const trimmedContent = options.content?.trim() || '';
+  if (!trimmedContent) {
+    throw new Error('Cannot send empty message');
+  }
 
   try {
     if (options.conversationUrl && page.url() !== options.conversationUrl) {
@@ -40,27 +43,47 @@ export async function sendMessageOnPage(
     }
 
     // Post-Send Verification:
-    // Wait up to 10s for newest message bubble in THREAD_MESSAGE_SELECTOR
-    const newestBubble = page.locator(THREAD_MESSAGE_SELECTOR).last();
-    await newestBubble.waitFor({ timeout: 10_000 });
+    // Poll up to 10s for newest message bubble matching trimmedContent
+    const startTime = Date.now();
+    let verified = false;
+    let extractedId: string | null = null;
 
-    const bubbleText = (await newestBubble.innerText().catch(() => '')) || '';
-    if (!bubbleText.includes(trimmedContent)) {
-      throw new Error('Newest message bubble does not match sent content');
+    while (Date.now() - startTime < 10_000) {
+      const newestBubble = page.locator(THREAD_MESSAGE_SELECTOR).last();
+      await newestBubble.waitFor({ timeout: 2_000 }).catch(() => {});
+      const bubbleText = (await newestBubble.innerText().catch(() => '')) || '';
+      if (bubbleText.includes(trimmedContent)) {
+        verified = true;
+        extractedId =
+          (await newestBubble.getAttribute('data-message-id').catch(() => null)) ||
+          (await newestBubble.getAttribute('id').catch(() => null));
+        break;
+      }
+      if (typeof page.waitForTimeout === 'function') {
+        await page.waitForTimeout(100);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     }
 
-    const extractedId =
-      (await newestBubble.getAttribute('data-message-id').catch(() => null)) ||
-      (await newestBubble.getAttribute('id').catch(() => null));
+    if (!verified) {
+      throw new Error('Newest message bubble does not match sent content');
+    }
 
     return {
       success: true,
       messageId: extractedId || `vgen_out_${Date.now()}`,
     };
   } catch (err) {
+    if (err instanceof Error && err.message === 'Cannot send empty message') {
+      throw err;
+    }
+
     // Ambiguous Recovery Block:
     await page.reload?.({ waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.waitForTimeout?.(500).catch(() => {});
+    if (typeof page.waitForTimeout === 'function') {
+      await page.waitForTimeout(500).catch(() => {});
+    }
 
     const recentBubbles = await page.locator(THREAD_MESSAGE_SELECTOR).all().catch(() => []);
     const lastFive = recentBubbles.slice(-5);

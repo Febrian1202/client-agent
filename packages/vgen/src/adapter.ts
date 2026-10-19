@@ -11,7 +11,7 @@ import type {
 import { SessionExpiredError, NavigationTimeoutError, NotSupportedError } from './errors';
 import { openThread, scrapeThreadMessages } from './read';
 import { extractMessages, toMessageResult } from './parse';
-import { CREATOR_PROFILE_MARKER } from './selectors';
+import { CREATOR_PROFILE_MARKER, VGEN_DASHBOARD_URL } from './selectors';
 import { sendMessageOnPage } from './send';
 
 export interface VGenAdapterOptions {
@@ -99,6 +99,10 @@ export class VGenBrowserAdapter implements PlatformAdapter {
     const shouldClose = !page;
 
     try {
+      if (!page || targetPage.url() === 'about:blank') {
+        await targetPage.goto(VGEN_DASHBOARD_URL, { waitUntil: 'domcontentloaded' });
+      }
+
       const profileEl = targetPage.locator(CREATOR_PROFILE_MARKER).first();
       const visible = await profileEl.isVisible().catch(() => false);
       if (visible) {
