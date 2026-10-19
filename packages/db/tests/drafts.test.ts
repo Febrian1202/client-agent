@@ -148,6 +148,10 @@ describe('drafts and approvals schema & queries', () => {
     expect(approvedDraft.status).toBe(DraftStatus.APPROVED);
     expect(approvedDraft.approvedBy).toBe(ownerId);
 
+    const dbApprovals = await getApprovalsByDraftId(createdDraft.id);
+    expect(dbApprovals[0]?.contentHash).toBeDefined();
+    expect(dbApprovals[0]?.contentHash).toHaveLength(64);
+
     const editedDraft = await draftService.updateDraftContent({
       draftId: createdDraft.id,
       newContent: 'Edited message text',

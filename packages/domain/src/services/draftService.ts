@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import {
   ApprovalAction,
   ApprovalStatus,
@@ -47,6 +48,7 @@ export interface InsertApprovalInput {
   userId: number;
   action: ApprovalAction | 'approve' | 'reject';
   status: ApprovalStatus | 'active' | 'revoked';
+  contentHash?: string | null;
 }
 
 export interface InsertAuditLogInput {
@@ -144,11 +146,14 @@ export async function approveDraft(repo: DraftRepository, params: ApproveDraftPa
 
   await repo.revokeApprovalsForDraft(draft.id);
 
+  const contentHash = createHash('sha256').update(draft.content).digest('hex');
+
   await repo.insertApproval({
     draftId: draft.id,
     userId: params.userId,
     action: ApprovalAction.APPROVE,
     status: ApprovalStatus.ACTIVE,
+    contentHash,
   });
 
   await repo.insertAuditLog({
@@ -158,7 +163,7 @@ export async function approveDraft(repo: DraftRepository, params: ApproveDraftPa
     action: AuditAction.USER_APPROVED_DRAFT,
     targetType: 'draft',
     targetId: draft.id,
-    metadata: {},
+    metadata: { contentHash },
   });
 
   const updated = await repo.updateDraft(draft.id, {

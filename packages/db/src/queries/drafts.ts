@@ -157,6 +157,7 @@ function mapApprovalRowToEntity(row: ApprovalRow): Approval {
     userId: row.userId,
     action: row.action as ApprovalAction,
     status: row.status as ApprovalStatus,
+    contentHash: row.contentHash,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -197,6 +198,7 @@ export function createDbDraftRepository(): DraftRepository {
         userId: data.userId,
         action: data.action,
         status: data.status,
+        contentHash: data.contentHash,
       });
       return mapApprovalRowToEntity(row);
     },

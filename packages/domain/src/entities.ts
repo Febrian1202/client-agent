@@ -139,6 +139,7 @@ export interface Approval {
   userId: number;
   action: ApprovalAction | 'approve' | 'reject';
   status: ApprovalStatus | 'active' | 'revoked';
+  contentHash?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

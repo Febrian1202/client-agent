@@ -50,6 +50,7 @@ describe('DraftService domain logic', () => {
           userId: data.userId,
           action: data.action,
           status: data.status,
+          contentHash: data.contentHash,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -185,5 +186,18 @@ describe('DraftService domain logic', () => {
     // Content edited while draft is still in PENDING_APPROVAL
     await service.updateDraftContent({ draftId: draft.id, newContent: 'Edited text', userId: 1 });
     expect(state.approvals[0]!.status).toBe('revoked');
+  });
+
+  it('records contentHash in approval and audit log when draft is approved', async () => {
+    const { repo, state } = createMockRepo();
+    const service = new DraftService(repo);
+    const draft = await service.createDraft({ conversationId: 10, content: 'Approved message text' });
+
+    const approved = await service.approveDraft({ draftId: draft.id, userId: 1 });
+    expect(approved.status).toBe(DraftStatus.APPROVED);
+    expect(state.approvals.length).toBe(1);
+    expect(state.approvals[0]!.contentHash).toBeDefined();
+    expect(state.approvals[0]!.contentHash).toHaveLength(64);
+    expect(state.audits[0]!.metadata?.contentHash).toBe(state.approvals[0]!.contentHash);
   });
 });

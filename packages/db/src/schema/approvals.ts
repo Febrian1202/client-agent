@@ -12,6 +12,7 @@ export const approvals = pgTable('approvals', {
     .references(() => users.id),
   action: varchar('action', { length: 50 }).notNull(), // 'approve' | 'reject'
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'revoked'
+  contentHash: varchar('content_hash', { length: 64 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

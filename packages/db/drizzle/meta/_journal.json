@@ -43,6 +43,13 @@
       "when": 1792405517511,
       "tag": "0005_loose_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792424953000,
+      "tag": "0006_add_approval_content_hash",
+      "breakpoints": true
     }
   ]
 }
