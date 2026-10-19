@@ -23,6 +23,50 @@ export interface DraftRoutesDeps {
   draftService?: DraftService;
 }
 
+function mapDomainError(error: unknown, set: { status?: number | string }) {
+  if (error instanceof DraftNotFoundError) {
+    set.status = 404;
+    return {
+      error: {
+        code: 'DRAFT_NOT_FOUND',
+        message: error.message,
+      },
+    };
+  }
+  if (error instanceof InvalidDraftStateError) {
+    set.status = 409;
+    return {
+      error: {
+        code: 'INVALID_DRAFT_STATE',
+        message: error.message,
+      },
+    };
+  }
+  if (error instanceof DraftContentEmptyError) {
+    set.status = 400;
+    return {
+      error: {
+        code: 'DRAFT_CONTENT_EMPTY',
+        message: error.message,
+      },
+    };
+  }
+  return null;
+}
+
+async function handleDomainErrors<T>(
+  set: { status?: number | string },
+  operation: () => Promise<T>
+): Promise<T | { error: { code: string; message: string } }> {
+  try {
+    return await operation();
+  } catch (error) {
+    const mapped = mapDomainError(error, set);
+    if (mapped) return mapped;
+    throw error;
+  }
+}
+
 export function createDraftRoutes(deps?: DraftRoutesDeps) {
   const service = deps?.draftService ?? defaultDraftService;
 
@@ -39,47 +83,22 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
       return { currentUser: userList[0] ?? null };
     })
     .onError(({ error, set }) => {
-      if (error instanceof DraftNotFoundError) {
-        set.status = 404;
-        return {
-          error: {
-            code: 'DRAFT_NOT_FOUND',
-            message: error.message,
-          },
-        };
-      }
-      if (error instanceof InvalidDraftStateError) {
-        set.status = 409;
-        return {
-          error: {
-            code: 'INVALID_DRAFT_STATE',
-            message: error.message,
-          },
-        };
-      }
-      if (error instanceof DraftContentEmptyError) {
-        set.status = 400;
-        return {
-          error: {
-            code: 'DRAFT_CONTENT_EMPTY',
-            message: error.message,
-          },
-        };
-      }
+      const mapped = mapDomainError(error, set);
+      if (mapped) return mapped;
     })
     .get(
       '/',
       async ({ query }) => {
         const convIdRaw = query.conversation_id ?? query.conversationId;
         const convId = convIdRaw ? parseInt(convIdRaw, 10) : undefined;
-        const limitRaw = query.limit ? parseInt(query.limit, 10) : undefined;
-        const offsetRaw = query.offset ? parseInt(query.offset, 10) : undefined;
+        const limitRaw = query.limit !== undefined ? parseInt(query.limit, 10) : undefined;
+        const offsetRaw = query.offset !== undefined ? parseInt(query.offset, 10) : undefined;
 
         const drafts = await listDrafts({
           status: query.status,
-          conversationId: convId && !Number.isNaN(convId) ? convId : undefined,
-          limit: limitRaw && !Number.isNaN(limitRaw) ? limitRaw : undefined,
-          offset: offsetRaw && !Number.isNaN(offsetRaw) ? offsetRaw : undefined,
+          conversationId: convId !== undefined && !Number.isNaN(convId) ? convId : undefined,
+          limit: limitRaw !== undefined && !Number.isNaN(limitRaw) ? limitRaw : undefined,
+          offset: offsetRaw !== undefined && !Number.isNaN(offsetRaw) ? offsetRaw : undefined,
         });
 
         return { drafts };
@@ -127,7 +146,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
         const conversationId = Number(body.conversationId);
         const userId = currentUser?.id ?? (await getOwnerUserId());
 
-        try {
+        return handleDomainErrors(set, async () => {
           const draft = await service.createDraft({
             conversationId,
             content: body.content,
@@ -136,23 +155,12 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
 
           set.status = 201;
           return { draft };
-        } catch (error) {
-          if (error instanceof DraftContentEmptyError) {
-            set.status = 400;
-            return {
-              error: {
-                code: 'DRAFT_CONTENT_EMPTY',
-                message: error.message,
-              },
-            };
-          }
-          throw error;
-        }
+        });
       },
       {
         body: t.Object({
           conversationId: t.Numeric(),
-          content: t.String({ minLength: 1 }),
+          content: t.String({ minLength: 1, maxLength: 2000 }),
         }),
       }
     )
@@ -162,7 +170,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
         const draftId = Number(params.id);
         const userId = currentUser?.id ?? (await getOwnerUserId());
 
-        try {
+        return handleDomainErrors(set, async () => {
           const draft = await service.updateDraftContent({
             draftId,
             newContent: body.content,
@@ -171,43 +179,14 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
 
           set.status = 200;
           return { draft };
-        } catch (error) {
-          if (error instanceof DraftNotFoundError) {
-            set.status = 404;
-            return {
-              error: {
-                code: 'DRAFT_NOT_FOUND',
-                message: error.message,
-              },
-            };
-          }
-          if (error instanceof InvalidDraftStateError) {
-            set.status = 409;
-            return {
-              error: {
-                code: 'INVALID_DRAFT_STATE',
-                message: error.message,
-              },
-            };
-          }
-          if (error instanceof DraftContentEmptyError) {
-            set.status = 400;
-            return {
-              error: {
-                code: 'DRAFT_CONTENT_EMPTY',
-                message: error.message,
-              },
-            };
-          }
-          throw error;
-        }
+        });
       },
       {
         params: t.Object({
           id: t.Numeric(),
         }),
         body: t.Object({
-          content: t.String({ minLength: 1 }),
+          content: t.String({ minLength: 1, maxLength: 2000 }),
         }),
       }
     )
@@ -217,7 +196,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
         const draftId = Number(params.id);
         const userId = currentUser?.id ?? (await getOwnerUserId());
 
-        try {
+        return handleDomainErrors(set, async () => {
           const draft = await service.approveDraft({
             draftId,
             userId,
@@ -225,27 +204,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
 
           set.status = 200;
           return { draft };
-        } catch (error) {
-          if (error instanceof DraftNotFoundError) {
-            set.status = 404;
-            return {
-              error: {
-                code: 'DRAFT_NOT_FOUND',
-                message: error.message,
-              },
-            };
-          }
-          if (error instanceof InvalidDraftStateError) {
-            set.status = 409;
-            return {
-              error: {
-                code: 'INVALID_DRAFT_STATE',
-                message: error.message,
-              },
-            };
-          }
-          throw error;
-        }
+        });
       },
       {
         params: t.Object({
@@ -259,7 +218,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
         const draftId = Number(params.id);
         const userId = currentUser?.id ?? (await getOwnerUserId());
 
-        try {
+        return handleDomainErrors(set, async () => {
           const draft = await service.rejectDraft({
             draftId,
             userId,
@@ -268,27 +227,7 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
 
           set.status = 200;
           return { draft };
-        } catch (error) {
-          if (error instanceof DraftNotFoundError) {
-            set.status = 404;
-            return {
-              error: {
-                code: 'DRAFT_NOT_FOUND',
-                message: error.message,
-              },
-            };
-          }
-          if (error instanceof InvalidDraftStateError) {
-            set.status = 409;
-            return {
-              error: {
-                code: 'INVALID_DRAFT_STATE',
-                message: error.message,
-              },
-            };
-          }
-          throw error;
-        }
+        });
       },
       {
         params: t.Object({

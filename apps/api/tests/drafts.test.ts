@@ -144,13 +144,22 @@ describe('Drafts API (/api/v1/drafts)', () => {
     const body2 = await res2.json();
     createdDraftIds.push(body2.draft.id);
 
-    // Filter by conversationId
+    // Filter by conversationId with offset=0 and limit=1
     const resList = await app.handle(
-      new Request(`http://localhost/api/v1/drafts?conversation_id=${conv.id}&limit=1`),
+      new Request(`http://localhost/api/v1/drafts?conversation_id=${conv.id}&limit=1&offset=0`),
     );
     expect(resList.status).toBe(200);
     const bodyList = await resList.json();
     expect(bodyList.drafts.length).toBe(1);
+
+    // Offset 1
+    const resListOffset = await app.handle(
+      new Request(`http://localhost/api/v1/drafts?conversation_id=${conv.id}&limit=1&offset=1`),
+    );
+    expect(resListOffset.status).toBe(200);
+    const bodyListOffset = await resListOffset.json();
+    expect(bodyListOffset.drafts.length).toBe(1);
+    expect(bodyListOffset.drafts[0].id).not.toBe(bodyList.drafts[0].id);
 
     // Filter by status
     const resStatus = await app.handle(
@@ -339,5 +348,29 @@ describe('Drafts API (/api/v1/drafts)', () => {
     expect(res2.status).toBe(422);
     const body2 = await res2.json();
     expect(body2.error.code).toBe('VALIDATION_ERROR');
+
+    // Content exceeding 2000 characters on POST
+    const res3 = await app.handle(
+      new Request('http://localhost/api/v1/drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: 1, content: 'x'.repeat(2001) }),
+      }),
+    );
+    expect(res3.status).toBe(422);
+    const body3 = await res3.json();
+    expect(body3.error.code).toBe('VALIDATION_ERROR');
+
+    // Content exceeding 2000 characters on PATCH
+    const res4 = await app.handle(
+      new Request('http://localhost/api/v1/drafts/1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'x'.repeat(2001) }),
+      }),
+    );
+    expect(res4.status).toBe(422);
+    const body4 = await res4.json();
+    expect(body4.error.code).toBe('VALIDATION_ERROR');
   });
 });
