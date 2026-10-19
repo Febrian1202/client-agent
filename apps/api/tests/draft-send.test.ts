@@ -112,4 +112,47 @@ describe('POST /api/v1/drafts/:id/send', () => {
       createdTaskIds.push(Number(body.taskId));
     }
   });
+
+  it('returns 202 with existing taskId on duplicate send requests without 500 error', async () => {
+    const ownerId = await getOwnerUserId();
+    const client = await insertClient({
+      userId: ownerId,
+      platform: 'vgen',
+      username: `test_send_dup_${Date.now()}`,
+    });
+    createdClientIds.push(client.id);
+
+    const conv = await insertConversation({
+      clientId: client.id,
+      platform: 'vgen',
+      externalId: `vgen_send_dup_${Date.now()}`,
+    });
+    createdConversationIds.push(conv.id);
+
+    const draft = await insertDraft({
+      conversationId: conv.id,
+      content: 'Approved draft for duplicate send test',
+      status: DraftStatus.APPROVED,
+      approvedBy: ownerId,
+      approvedAt: new Date(),
+    });
+    createdDraftIds.push(draft.id);
+
+    const res1 = await app.handle(
+      new Request(`http://localhost/api/v1/drafts/${draft.id}/send`, { method: 'POST' })
+    );
+    expect(res1.status).toBe(202);
+    const body1 = await res1.json();
+    expect(body1.taskId).toBeDefined();
+    expect(body1.status).toBe('queued');
+    createdTaskIds.push(Number(body1.taskId));
+
+    const res2 = await app.handle(
+      new Request(`http://localhost/api/v1/drafts/${draft.id}/send`, { method: 'POST' })
+    );
+    expect(res2.status).toBe(202);
+    const body2 = await res2.json();
+    expect(body2.taskId).toBe(body1.taskId);
+    expect(body2.status).toBe('queued');
+  });
 });

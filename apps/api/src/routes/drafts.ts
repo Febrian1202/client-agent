@@ -10,6 +10,7 @@ import {
   getApprovalsByDraftId,
   listDrafts,
   createTask,
+  findTaskByIdempotencyKey,
 } from '@client-agent/db';
 import {
   DraftNotFoundError,
@@ -17,6 +18,7 @@ import {
   DraftContentEmptyError,
   DraftStatus,
   TaskType,
+  TaskStatus,
   type DraftService,
 } from '@client-agent/domain';
 import { STREAMS, publishTask as defaultPublishTask } from '@client-agent/queue';
@@ -272,11 +274,23 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
         }
 
         const userId = currentUser?.id ?? (await getOwnerUserId());
+        const idempotencyKey = `send_draft_${draft.id}_${new Date(draft.updatedAt).getTime()}`;
+
+        const existingTask = await findTaskByIdempotencyKey(idempotencyKey);
+        if (existingTask) {
+          if (existingTask.status === TaskStatus.QUEUED || existingTask.status === TaskStatus.RUNNING) {
+            set.status = 202;
+            return { taskId: existingTask.id, status: 'queued' };
+          }
+          set.status = 202;
+          return { taskId: existingTask.id, status: existingTask.status };
+        }
+
         const task = await createTask({
           userId,
           type: TaskType.SEND_VGEN_MESSAGE,
           input: { draftId: draft.id, userId },
-          idempotencyKey: `send_draft_${draft.id}_${new Date(draft.updatedAt).getTime()}`,
+          idempotencyKey,
         });
 
         await publisher(STREAMS.SEND, {
