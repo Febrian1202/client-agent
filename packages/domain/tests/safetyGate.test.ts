@@ -113,6 +113,16 @@ describe('7-Point Safety Gate', () => {
     expect(result.failedCheck).toBe(6);
   });
 
+  it('fails Check 7 when latest inbound client message is newer than draft creation', () => {
+    const future = new Date(now.getTime() + 5_000);
+    const result = verifyPreSendConditions({
+      ...validParams,
+      latestInboundMessageSentAt: future,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.failedCheck).toBe(7);
+  });
+
   it('fails Check 1 when conversation ID does not match draft conversationId', () => {
     const result = verifyPreSendConditions({
       ...validParams,
