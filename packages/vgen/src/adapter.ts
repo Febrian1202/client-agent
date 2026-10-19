@@ -11,6 +11,8 @@ import type {
 import { SessionExpiredError, NavigationTimeoutError, NotSupportedError } from './errors';
 import { openThread, scrapeThreadMessages } from './read';
 import { extractMessages, toMessageResult } from './parse';
+import { CREATOR_PROFILE_MARKER } from './selectors';
+import { sendMessageOnPage } from './send';
 
 export interface VGenAdapterOptions {
   createPage?: () => Promise<Page>;
@@ -63,9 +65,63 @@ export class VGenBrowserAdapter implements PlatformAdapter {
     throw new NotSupportedError('getMessages');
   }
 
-  async sendMessage(
-    _input: { conversationId: string; content: string },
-  ): Promise<{ success: boolean; messageId: string }> {
-    throw new NotSupportedError('sendMessage');
+  async sendMessage(input: {
+    conversationId: string;
+    content: string;
+    conversationUrl?: string;
+    clientUsername?: string;
+  }): Promise<{ success: boolean; messageId: string }> {
+    const page = await this.createPage();
+    try {
+      const authed = await checkVGenAuthStatus(page);
+      if (!authed) throw new SessionExpiredError();
+
+      let targetUrl = input.conversationUrl;
+      if (!targetUrl && input.clientUsername) {
+        const thread = await openThread(page, input.clientUsername);
+        targetUrl = thread.url;
+      }
+      if (!targetUrl) {
+        throw new Error('Either conversationUrl or clientUsername must be provided to sendMessage');
+      }
+
+      return await sendMessageOnPage(page, {
+        conversationUrl: targetUrl,
+        content: input.content,
+      });
+    } finally {
+      await this.closePage(page);
+    }
+  }
+
+  async getAuthenticatedUsername(page?: Page): Promise<string | null> {
+    const targetPage = page ?? (await this.createPage());
+    const shouldClose = !page;
+
+    try {
+      const profileEl = targetPage.locator(CREATOR_PROFILE_MARKER).first();
+      const visible = await profileEl.isVisible().catch(() => false);
+      if (visible) {
+        const text = (await profileEl.innerText().catch(() => ''))?.trim();
+        if (text) return text.replace(/^@/, '');
+
+        const alt = (await profileEl.getAttribute('alt').catch(() => ''))?.trim();
+        if (alt) return alt.replace(/^@/, '');
+
+        const dataUser = (await profileEl.getAttribute('data-username').catch(() => ''))?.trim();
+        if (dataUser) return dataUser.replace(/^@/, '');
+
+        const href = await profileEl.getAttribute('href').catch(() => null);
+        if (href) {
+          const match = href.match(/\/creator\/([A-Za-z0-9_-]+)/);
+          if (match?.[1]) return match[1];
+        }
+      }
+      return null;
+    } finally {
+      if (shouldClose) {
+        await this.closePage(targetPage);
+      }
+    }
   }
 }

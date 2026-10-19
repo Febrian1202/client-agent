@@ -25,3 +25,17 @@ export class NotSupportedError extends Error {
     this.name = 'NotSupportedError';
   }
 }
+
+export class SendAmbiguousError extends Error {
+  constructor(message = 'Message send timed out and delivery could not be confirmed in conversation thread') {
+    super(message);
+    this.name = 'SendAmbiguousError';
+  }
+}
+
+export class SafetyCheckFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SafetyCheckFailedError';
+  }
+}

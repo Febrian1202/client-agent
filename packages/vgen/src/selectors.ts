@@ -11,3 +11,6 @@ export const MESSAGE_SENDER_SELECTOR = '[data-testid="message-sender"]';
 export const MESSAGE_BODY_SELECTOR = '[data-testid="message-body"]';
 export const MESSAGE_TIME_SELECTOR = 'time';
 export const OUTBOUND_MARKER = 'data-outbound'; // attribute on outbound message blocks
+export const MESSAGE_INPUT_SELECTOR = '[data-testid="message-input"], textarea[placeholder*="message" i], .str-chat__textarea textarea';
+export const SEND_BUTTON_SELECTOR = '[data-testid="send-button"], button[type="submit"], button:has-text("Send")';
+export const CREATOR_PROFILE_MARKER = '[data-testid="user-username"], [data-testid="user-avatar"] [alt], a[href*="/creator"]';
