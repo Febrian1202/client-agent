@@ -9,18 +9,23 @@ import {
   getDraftById,
   getApprovalsByDraftId,
   listDrafts,
+  createTask,
 } from '@client-agent/db';
 import {
   DraftNotFoundError,
   InvalidDraftStateError,
   DraftContentEmptyError,
+  DraftStatus,
+  TaskType,
   type DraftService,
 } from '@client-agent/domain';
+import { STREAMS, publishTask as defaultPublishTask } from '@client-agent/queue';
 import { authPlugin } from '../auth/plugin';
 import { getSession } from '../auth/session';
 
 export interface DraftRoutesDeps {
   draftService?: DraftService;
+  publishTask?: (stream: string, payload: Record<string, unknown>) => Promise<string>;
 }
 
 function mapDomainError(error: unknown, set: { status?: number | string }) {
@@ -69,6 +74,7 @@ async function handleDomainErrors<T>(
 
 export function createDraftRoutes(deps?: DraftRoutesDeps) {
   const service = deps?.draftService ?? defaultDraftService;
+  const publisher = deps?.publishTask ?? defaultPublishTask;
 
   return new Elysia({ prefix: '/api/v1/drafts' })
     .use(authPlugin)
@@ -238,6 +244,54 @@ export function createDraftRoutes(deps?: DraftRoutesDeps) {
             reason: t.Optional(t.String()),
           })
         ),
+      }
+    )
+    .post(
+      '/:id/send',
+      async ({ params, currentUser, set }) => {
+        const draftId = Number(params.id);
+        const draft = await getDraftById(draftId);
+        if (!draft) {
+          set.status = 404;
+          return {
+            error: {
+              code: 'DRAFT_NOT_FOUND',
+              message: `Draft with ID ${draftId} not found`,
+            },
+          };
+        }
+
+        if (draft.status !== DraftStatus.APPROVED) {
+          set.status = 409;
+          return {
+            error: {
+              code: 'NOT_APPROVED',
+              message: 'Draft must be approved before sending',
+            },
+          };
+        }
+
+        const userId = currentUser?.id ?? (await getOwnerUserId());
+        const task = await createTask({
+          userId,
+          type: TaskType.SEND_VGEN_MESSAGE,
+          input: { draftId: draft.id, userId },
+          idempotencyKey: `send_draft_${draft.id}_${new Date(draft.updatedAt).getTime()}`,
+        });
+
+        await publisher(STREAMS.SEND, {
+          taskId: task.id,
+          draftId: draft.id,
+          userId,
+        });
+
+        set.status = 202;
+        return { taskId: task.id, status: 'queued' };
+      },
+      {
+        params: t.Object({
+          id: t.Numeric(),
+        }),
       }
     );
 }
