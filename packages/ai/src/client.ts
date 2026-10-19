@@ -35,6 +35,7 @@ export class OpenAICompatibleClient {
     const payload: Record<string, unknown> = {
       model,
       messages: options.messages,
+      stream: false,
     };
     if (typeof options.temperature === 'number') {
       payload.temperature = options.temperature;
