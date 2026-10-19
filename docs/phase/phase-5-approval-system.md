@@ -75,7 +75,7 @@ Discord Embed with Action Buttons:
 ## Atomic Task Breakdown
 
 ### Task 5.1: Database Schemas for Drafts and Approvals
-- [ ] In `packages/db/src/schema/drafts.ts`, define `drafts` table:
+- [x] In `packages/db/src/schema/drafts.ts`, define `drafts` table:
   - `id`: `bigserial` primary key
   - `conversation_id`: `bigint` references `conversations(id)`
   - `agent_run_id`: `bigint` references `agent_runs(id)` nullable
@@ -85,19 +85,19 @@ Discord Embed with Action Buttons:
   - `approved_at`: `timestamp with time zone` nullable
   - `sent_at`: `timestamp with time zone` nullable
   - `created_at`, `updated_at`: `timestamp with time zone` default `now()`
-- [ ] In `packages/db/src/schema/approvals.ts`, define `approvals` table:
+- [x] In `packages/db/src/schema/approvals.ts`, define `approvals` table:
   - `id`: `bigserial` primary key
   - `draft_id`: `bigint` references `drafts(id)`
   - `user_id`: `bigint` references `users(id)`
   - `action`: `text` (`approve`, `reject`)
   - `status`: `text` (`active`, `revoked`)
   - `created_at`, `updated_at`: `timestamp with time zone` default `now()`
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 5.2: Drafts & Approvals Domain Service in `packages/domain`
-- [ ] In `packages/domain/src/services/draftService.ts`:
+- [x] In `packages/domain/src/services/draftService.ts`:
   - `createDraft({ conversationId, content, agentRunId? })`:
     - Creates row with status `pending_approval`.
   - `approveDraft({ draftId, userId })`:
@@ -116,7 +116,7 @@ Discord Embed with Action Buttons:
 ---
 
 ### Task 5.3: Drafts REST API in `apps/api`
-- [ ] In `apps/api/src/routes/drafts.ts`:
+- [x] In `apps/api/src/routes/drafts.ts`:
   - `GET /api/v1/drafts`:
     - List drafts with pagination, optional filter `?status=pending_approval` or `?conversation_id=...`.
   - `GET /api/v1/drafts/:id`:
@@ -129,17 +129,17 @@ Discord Embed with Action Buttons:
     - Approves draft. Returns HTTP 200 with updated draft.
   - `POST /api/v1/drafts/:id/reject`:
     - Rejects draft. Accepts optional `{ reason }`.
-- [ ] Mount routes in `apps/api/src/index.ts`.
+- [x] Mount routes in `apps/api/src/index.ts`.
 
 ---
 
 ### Task 5.4: Interactive Discord Approval Buttons & Modals
-- [ ] In `packages/discord/src/components/draftButtons.ts`:
+- [x] In `packages/discord/src/components/draftButtons.ts`:
   - Create ActionRow with 3 Discord buttons:
     - Button 1: `approve_draft:<draftId>` (Success / Green style, "Approve ✅")
     - Button 2: `edit_draft:<draftId>` (Primary / Blue style, "Edit ✏️")
     - Button 3: `reject_draft:<draftId>` (Danger / Red style, "Reject ❌")
-- [ ] Handle Discord Interactions in `packages/discord/src/interactions/`:
+- [x] Handle Discord Interactions in `packages/discord/src/interactions/`:
   - On `approve_draft:<draftId>` click:
     - Call `approveDraft` domain service / API.
     - Edit Discord original message: replace buttons with confirmation text `"✅ Approved by Creator on [timestamp]"`.
@@ -188,8 +188,8 @@ Discord Embed with Action Buttons:
 ---
 
 ## Done When Checklist
-- [ ] Database stores `drafts` and `approvals` with audit timestamps.
-- [ ] Draft state machine strictly blocks unapproved drafts from external sending.
-- [ ] Editing any draft immediately invalidates prior approvals.
-- [ ] Discord embeds feature responsive [Approve], [Edit], and [Reject] controls.
-- [ ] Discord modal allows direct editing of draft text without opening the web dashboard.
+- [x] Database stores `drafts` and `approvals` with audit timestamps.
+- [x] Draft state machine strictly blocks unapproved drafts from external sending.
+- [x] Editing any draft immediately invalidates prior approvals.
+- [x] Discord embeds feature responsive [Approve], [Edit], and [Reject] controls.
+- [x] Discord modal allows direct editing of draft text without opening the web dashboard.

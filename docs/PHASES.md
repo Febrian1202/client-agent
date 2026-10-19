@@ -156,20 +156,21 @@ working system that does something useful.
 
 ---
 
-## Phase 5 — Approval System
+## Phase 5 — Approval System (Completed)
 
-> **Detailed Guide:** See [docs/phase/phase-5-approval-system.md](phase/phase-5-approval-system.md)
+> **Detailed Guide:** See [docs/phase/phase-5-approval-system.md](phase/phase-5-approval-system.md)  
+> **Status:** Completed (Merged / Verified)
 
 **Goal:** Human-in-the-loop approval for reply drafts.
 
 ```
-[ ] Draft model in database
-[ ] Approval model in database
-[ ] Draft state machine (draft → pending → approved/rejected)
-[ ] Approval invalidation on draft edit
-[ ] Draft approval/rejection API endpoints
-[ ] Discord draft display with [Approve] [Edit] [Reject] buttons
-[ ] Discord approval/rejection interactions
+[x] Draft model in database
+[x] Approval model in database
+[x] Draft state machine (draft → pending → approved/rejected)
+[x] Approval invalidation on draft edit
+[x] Draft approval/rejection API endpoints
+[x] Discord draft display with [Approve] [Edit] [Reject] buttons
+[x] Discord approval/rejection interactions
 ```
 
 **Done when:**
@@ -181,7 +182,7 @@ working system that does something useful.
 
 ---
 
-## Phase 6 — VGen Send
+## Phase 6 — VGen Send (Next Up)
 
 > **Detailed Guide:** See [docs/phase/phase-6-vgen-send.md](phase/phase-6-vgen-send.md)
 
