@@ -167,13 +167,11 @@ export async function approveDraft(repo: DraftRepository, params: ApproveDraftPa
     approvedAt: new Date(),
   });
 
-  return updated ?? {
-    ...draft,
-    status: DraftStatus.APPROVED,
-    approvedBy: params.userId,
-    approvedAt: new Date(),
-    updatedAt: new Date(),
-  };
+  if (!updated) {
+    throw new DraftNotFoundError(draft.id);
+  }
+
+  return updated;
 }
 
 export async function rejectDraft(repo: DraftRepository, params: RejectDraftParams): Promise<Draft> {
@@ -215,13 +213,11 @@ export async function rejectDraft(repo: DraftRepository, params: RejectDraftPara
     approvedAt: null,
   });
 
-  return updated ?? {
-    ...draft,
-    status: DraftStatus.REJECTED,
-    approvedBy: null,
-    approvedAt: null,
-    updatedAt: new Date(),
-  };
+  if (!updated) {
+    throw new DraftNotFoundError(draft.id);
+  }
+
+  return updated;
 }
 
 export async function updateDraftContent(
@@ -241,9 +237,7 @@ export async function updateDraftContent(
     throw new InvalidDraftStateError('Cannot edit draft: draft is already sent');
   }
 
-  if (draft.status === DraftStatus.APPROVED) {
-    await repo.revokeApprovalsForDraft(draft.id);
-  }
+  await repo.revokeApprovalsForDraft(draft.id);
 
   await repo.insertAuditLog({
     userId: params.userId,
@@ -262,14 +256,11 @@ export async function updateDraftContent(
     approvedAt: null,
   });
 
-  return updated ?? {
-    ...draft,
-    content: params.newContent,
-    status: DraftStatus.PENDING_APPROVAL,
-    approvedBy: null,
-    approvedAt: null,
-    updatedAt: new Date(),
-  };
+  if (!updated) {
+    throw new DraftNotFoundError(draft.id);
+  }
+
+  return updated;
 }
 
 export class DraftService {

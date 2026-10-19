@@ -212,4 +212,48 @@ describe('Worker Agent Handlers', () => {
     expect(mockMessenger.sentMessages[0]!).toContain('Draft only — human approval required');
     expect(mockMessenger.sentMessages[0]!).toContain(draftText);
   });
+
+  it('clamps generated reply draft delivered to Discord to max 2000 characters', async () => {
+    seq++;
+    const task = await createTask({
+      userId: ownerId,
+      type: TaskType.GENERATE_REPLY_DRAFT,
+      input: {
+        clientUsername: testClientUsername,
+        instruction: 'Generate very long detailed breakdown',
+        requestedBy: 'discord',
+        discord: {
+          interactionToken: 'tok-reply-overflow',
+          applicationId: 'app-1',
+          channelId: 'chan-1',
+        },
+      },
+      idempotencyKey: `${runTag}-${seq}`,
+    });
+    createdTaskIds.push(task.id);
+
+    const veryLongDraftText = 'Z'.repeat(2500);
+    const mockAi = makeMockAiClient(veryLongDraftText);
+    const mockMessenger = makeMockMessenger();
+
+    const parsedTask: ParsedTask = {
+      id: 'stream-msg-overflow',
+      data: {
+        type: String(TaskType.GENERATE_REPLY_DRAFT),
+        taskId: String(task.id),
+      },
+    };
+
+    await handleGenerateReplyDraft(parsedTask, {
+      aiClient: mockAi,
+      messenger: mockMessenger.messenger,
+    });
+
+    const refreshed = await getTaskById(task.id);
+    expect(refreshed?.status).toBe(TaskStatus.COMPLETED);
+
+    expect(mockMessenger.sentMessages.length).toBe(1);
+    expect(mockMessenger.sentMessages[0]!.length).toBeLessThanOrEqual(2000);
+    expect(mockMessenger.sentMessages[0]!.endsWith('...')).toBe(true);
+  });
 });

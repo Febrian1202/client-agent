@@ -13,6 +13,18 @@ export interface DraftInteractionDeps {
   getDraftContent?: (draftId: number) => Promise<string | null | undefined>;
 }
 
+function clampMessageWithSuffix(baseContent: string, suffix: string): string {
+  if (!baseContent) {
+    return suffix.trimStart();
+  }
+  const maxBaseLength = 2000 - suffix.length;
+  const safeBase =
+    baseContent.length > maxBaseLength
+      ? baseContent.slice(0, Math.max(0, maxBaseLength - 3)) + '...'
+      : baseContent;
+  return `${safeBase}${suffix}`;
+}
+
 export async function handleDraftButtonInteraction(
   interaction: ButtonInteraction,
   deps: DraftInteractionDeps,
@@ -31,10 +43,9 @@ export async function handleDraftButtonInteraction(
   if (action === 'approve_draft') {
     await deps.approveDraft({ draftId, userId });
     const statusRow = buildDraftStatusRow('approved', actorName);
+    const suffix = `\n\n✅ Approved by ${actorName}`;
     const baseContent = (interaction.message?.content ?? '').replace(/\n\n[✅❌].*$/, '').trim();
-    const content = baseContent
-      ? `${baseContent}\n\n✅ Approved by ${actorName}`
-      : `✅ Approved by ${actorName}`;
+    const content = clampMessageWithSuffix(baseContent, suffix);
 
     await interaction.update({
       content,
@@ -43,10 +54,9 @@ export async function handleDraftButtonInteraction(
   } else if (action === 'reject_draft') {
     await deps.rejectDraft({ draftId, userId });
     const statusRow = buildDraftStatusRow('rejected', actorName);
+    const suffix = `\n\n❌ Rejected by ${actorName}`;
     const baseContent = (interaction.message?.content ?? '').replace(/\n\n[✅❌].*$/, '').trim();
-    const content = baseContent
-      ? `${baseContent}\n\n❌ Rejected by ${actorName}`
-      : `❌ Rejected by ${actorName}`;
+    const content = clampMessageWithSuffix(baseContent, suffix);
 
     await interaction.update({
       content,
@@ -95,6 +105,10 @@ export async function handleDraftModalSubmitInteraction(
     if (match && match[1]) {
       formattedContent = formatReplyDraftMessage(match[1].trim(), newContent);
     }
+  }
+
+  if (formattedContent.length > 2000) {
+    formattedContent = formattedContent.slice(0, 1997) + '...';
   }
 
   const actionRow = buildDraftActionRow(draftId);

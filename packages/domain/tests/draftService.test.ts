@@ -154,4 +154,36 @@ describe('DraftService domain logic', () => {
     const draft = await service.createDraft({ conversationId: 1, content: 'Valid content' });
     expect(service.updateDraftContent({ draftId: draft.id, newContent: '', userId: 1 })).rejects.toThrow(DraftContentEmptyError);
   });
+
+  it('throws DraftNotFoundError when repo.updateDraft returns null on approve, reject, or edit', async () => {
+    const { repo, state } = createMockRepo();
+    const service = new DraftService(repo);
+    const draft = await service.createDraft({ conversationId: 1, content: 'Test draft' });
+
+    // Mock updateDraft to return null (simulating concurrent deletion)
+    repo.updateDraft = async () => null;
+
+    expect(service.approveDraft({ draftId: draft.id, userId: 1 })).rejects.toThrow(DraftNotFoundError);
+    expect(service.rejectDraft({ draftId: draft.id, userId: 1 })).rejects.toThrow(DraftNotFoundError);
+    expect(service.updateDraftContent({ draftId: draft.id, newContent: 'Updated', userId: 1 })).rejects.toThrow(DraftNotFoundError);
+  });
+
+  it('unconditionally revokes approvals on edit even if draft was in PENDING_APPROVAL status', async () => {
+    const { repo, state } = createMockRepo();
+    const service = new DraftService(repo);
+    const draft = await service.createDraft({ conversationId: 1, content: 'Initial draft' });
+
+    // Manually insert an approval (e.g. edge state)
+    await repo.insertApproval({
+      draftId: draft.id,
+      userId: 1,
+      action: 'approve',
+      status: 'active',
+    });
+    expect(state.approvals[0]!.status).toBe('active');
+
+    // Content edited while draft is still in PENDING_APPROVAL
+    await service.updateDraftContent({ draftId: draft.id, newContent: 'Edited text', userId: 1 });
+    expect(state.approvals[0]!.status).toBe('revoked');
+  });
 });

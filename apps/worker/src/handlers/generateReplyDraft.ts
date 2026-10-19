@@ -147,7 +147,10 @@ export async function handleGenerateReplyDraft(
       metadata: { taskId, conversationId: conv.id, agentRunId: agentRun.id },
     });
 
-    const formatted = formatReplyDraftMessage(input.clientUsername, content);
+    let formatted = formatReplyDraftMessage(input.clientUsername, content);
+    if (formatted.length > 2000) {
+      formatted = formatted.slice(0, 1997) + '...';
+    }
     const actionRow = buildDraftActionRow(draft.id);
 
     if (deps.messenger && input.discord?.interactionToken && input.discord?.applicationId) {

@@ -242,4 +242,67 @@ describe('Discord Draft Buttons and Modals', () => {
     await handleDraftModalSubmitInteraction({ customId: 'other_modal:12' } as any, deps);
     expect(called).toBe(false);
   });
+
+  it('clamps button update message content to max 2000 characters when appending approval or rejection', async () => {
+    let updatedPayload: any = null;
+    const deps: DraftInteractionDeps = {
+      approveDraft: async () => {},
+      rejectDraft: async () => {},
+      updateDraftContent: async () => {},
+    };
+
+    const longContent = 'A'.repeat(2000);
+    const mockButtonInteraction: any = {
+      isButton: () => true,
+      isModalSubmit: () => false,
+      customId: 'approve_draft:55',
+      user: { id: 'user1', username: 'SuperLongCreatorNameThatExtendsTheSuffix' },
+      message: { content: longContent },
+      update: async (payload: any) => {
+        updatedPayload = payload;
+      },
+    };
+
+    await handleDraftButtonInteraction(mockButtonInteraction, deps);
+    expect(updatedPayload.content.length).toBeLessThanOrEqual(2000);
+    expect(updatedPayload.content).toContain('...');
+    expect(updatedPayload.content).toContain('✅ Approved by SuperLongCreatorNameThatExtendsTheSuffix');
+
+    // Test rejection as well
+    mockButtonInteraction.customId = 'reject_draft:55';
+    await handleDraftButtonInteraction(mockButtonInteraction, deps);
+    expect(updatedPayload.content.length).toBeLessThanOrEqual(2000);
+    expect(updatedPayload.content).toContain('...');
+    expect(updatedPayload.content).toContain('❌ Rejected by SuperLongCreatorNameThatExtendsTheSuffix');
+  });
+
+  it('clamps modal submit formatted content to max 2000 characters', async () => {
+    let updatedPayload: any = null;
+    const deps: DraftInteractionDeps = {
+      approveDraft: async () => {},
+      rejectDraft: async () => {},
+      updateDraftContent: async () => {},
+    };
+
+    const veryLongInput = 'B'.repeat(2500);
+    const mockModalInteraction: any = {
+      isButton: () => false,
+      isModalSubmit: () => true,
+      customId: 'modal_edit_draft:66',
+      user: { id: 'user1', username: 'Creator' },
+      message: {
+        content: '✍️ **Draft Reply for @someclient**\n*(Draft only — human approval required before sending)*\n\nOld text',
+      },
+      fields: {
+        getTextInputValue: () => veryLongInput,
+      },
+      update: async (payload: any) => {
+        updatedPayload = payload;
+      },
+    };
+
+    await handleDraftModalSubmitInteraction(mockModalInteraction, deps);
+    expect(updatedPayload.content.length).toBeLessThanOrEqual(2000);
+    expect(updatedPayload.content.endsWith('...')).toBe(true);
+  });
 });

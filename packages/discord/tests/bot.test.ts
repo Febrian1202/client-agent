@@ -97,6 +97,60 @@ describe('Interaction router', () => {
     await router(buttonInteraction);
     expect(seen).toEqual(['approved:approve_draft:42']);
   });
+
+  it('provides ephemeral error feedback on button interaction failure', async () => {
+    let replyPayload: any = null;
+    const router = createInteractionRouter({
+      commands: {},
+      onButton: async () => {
+        throw new Error('Database connection failed');
+      },
+    });
+
+    const buttonInteraction: any = {
+      isChatInputCommand: () => false,
+      isButton: () => true,
+      isModalSubmit: () => false,
+      customId: 'approve_draft:99',
+      replied: false,
+      deferred: false,
+      reply: async (payload: any) => {
+        replyPayload = payload;
+      },
+    };
+
+    await router(buttonInteraction);
+    expect(replyPayload).toBeDefined();
+    expect(replyPayload.ephemeral).toBe(true);
+    expect(replyPayload.content).toBe('⚠️ Action failed: Database connection failed');
+  });
+
+  it('provides ephemeral error feedback on modal interaction failure', async () => {
+    let replyPayload: any = null;
+    const router = createInteractionRouter({
+      commands: {},
+      onModalSubmit: async () => {
+        throw new Error('Draft not found');
+      },
+    });
+
+    const modalInteraction: any = {
+      isChatInputCommand: () => false,
+      isButton: () => false,
+      isModalSubmit: () => true,
+      customId: 'modal_edit_draft:99',
+      replied: false,
+      deferred: false,
+      reply: async (payload: any) => {
+        replyPayload = payload;
+      },
+    };
+
+    await router(modalInteraction);
+    expect(replyPayload).toBeDefined();
+    expect(replyPayload.ephemeral).toBe(true);
+    expect(replyPayload.content).toBe('⚠️ Action failed: Draft not found');
+  });
 });
 
 describe('Slash command registration', () => {

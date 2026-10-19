@@ -132,8 +132,14 @@ export function createInteractionRouter(
             await handler(interaction);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[discord:bot] Handler for button ${interaction.customId} failed:`, err);
+        if (!interaction.replied && !interaction.deferred && typeof (interaction as any).reply === 'function') {
+          await (interaction as any).reply({
+            content: `⚠️ Action failed: ${err?.message || err}`,
+            ephemeral: true,
+          }).catch(() => {});
+        }
       }
       return;
     }
@@ -151,8 +157,14 @@ export function createInteractionRouter(
             await handler(interaction);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[discord:bot] Handler for modal ${interaction.customId} failed:`, err);
+        if (!interaction.replied && !interaction.deferred && typeof (interaction as any).reply === 'function') {
+          await (interaction as any).reply({
+            content: `⚠️ Action failed: ${err?.message || err}`,
+            ephemeral: true,
+          }).catch(() => {});
+        }
       }
       return;
     }
