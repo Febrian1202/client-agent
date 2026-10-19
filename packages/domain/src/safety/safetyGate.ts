@@ -11,6 +11,7 @@ export interface PreSendCheckParams {
   authenticatedCreatorUsername?: string | null;
   expectedCreatorUsername: string;
   latestInboundMessageSentAt?: Date | null;
+  computeHash?: (content: string) => string;
 }
 
 export interface SafetyCheckResult {
@@ -71,7 +72,8 @@ export function verifyPreSendConditions(params: PreSendCheckParams): SafetyCheck
   }
 
   // Check 5: Content Unchanged
-  const currentHash = computeDraftHash(params.draft.content);
+  const hashFn = params.computeHash ?? computeDraftHash;
+  const currentHash = hashFn(params.draft.content);
   const recordedHash = params.expectedApprovalHash ?? params.activeApproval?.contentHash;
   if (!recordedHash || currentHash !== recordedHash) {
     return {

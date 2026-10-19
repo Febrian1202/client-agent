@@ -11,6 +11,7 @@ import {
 } from './handlers/readVgenConversation';
 import { handleGenerateSummary } from './handlers/generateSummary';
 import { handleGenerateReplyDraft } from './handlers/generateReplyDraft';
+import { handleSendVgenMessage } from './handlers/sendVgenMessage';
 import { resolveDiscordNotifier } from './services/discord';
 import { resolveVgenWorkerDeps } from './services/vgen';
 import { resolveAiWorkerDeps } from './services/ai';
@@ -75,6 +76,16 @@ const { shutdown } = await startWorker({
           return handleGenerateReplyDraft(task, deps);
         }
         throw new Error(`AGENT stream received unsupported task type: ${type}`);
+      },
+    },
+    {
+      stream: STREAMS.SEND,
+      handler: async (task) => {
+        const vgenDeps = await resolveVgenWorkerDeps();
+        return handleSendVgenMessage(task, {
+          adapter: vgenDeps.adapter,
+          messenger: vgenDeps.messenger,
+        });
       },
     },
   ],
