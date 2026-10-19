@@ -1,6 +1,8 @@
 import { type Page } from 'playwright';
 import {
   MESSAGE_INPUT_SELECTOR,
+  MESSAGE_SENDER_SELECTOR,
+  OUTBOUND_MARKER,
   SEND_BUTTON_SELECTOR,
   THREAD_MESSAGE_SELECTOR,
 } from './selectors';
@@ -90,23 +92,46 @@ export async function sendMessageOnPage(
 
     for (const bubble of lastFive) {
       const text = (await bubble.innerText?.().catch(() => '')) || '';
-      if (text.includes(trimmedContent)) {
-        return {
-          success: true,
-          messageId: `vgen_recovered_${Date.now()}`,
-        };
+      let matches = text.includes(trimmedContent);
+
+      if (!matches) {
+        const evalText =
+          (await bubble
+            .evaluate?.((el: HTMLElement) => el.innerText || el.textContent || '')
+            .catch(() => '')) || '';
+        matches = evalText.includes(trimmedContent);
       }
 
-      const evalText =
-        (await bubble
-          .evaluate?.((el: HTMLElement) => el.innerText || el.textContent || '')
-          .catch(() => '')) || '';
-      if (evalText.includes(trimmedContent)) {
-        return {
-          success: true,
-          messageId: `vgen_recovered_${Date.now()}`,
-        };
+      if (!matches) {
+        continue;
       }
+
+      // Direction check: verify bubble is outbound / from creator if markers are present.
+      const outboundAttr = await bubble.getAttribute?.(OUTBOUND_MARKER).catch(() => null);
+      const senderText = (
+        await bubble.locator?.(MESSAGE_SENDER_SELECTOR).first().innerText?.().catch(() => '')
+      )?.trim().toLowerCase() || '';
+      const classAttr = (await bubble.getAttribute?.('class').catch(() => '')) || '';
+
+      const isOutboundByAttr = outboundAttr !== null && outboundAttr !== 'false';
+      const isOutboundBySender =
+        senderText.length > 0 && /\b(you|creator|me)\b/i.test(senderText);
+      const isOutboundByClass = classAttr.includes('str-chat__message--me');
+
+      const hasExplicitOutbound = isOutboundByAttr || isOutboundBySender || isOutboundByClass;
+      const hasConflictingIndicator =
+        (outboundAttr !== null && outboundAttr === 'false') ||
+        (senderText.length > 0 && !isOutboundBySender) ||
+        classAttr.includes('str-chat__message--other');
+
+      if (hasConflictingIndicator && !hasExplicitOutbound) {
+        continue;
+      }
+
+      return {
+        success: true,
+        messageId: `vgen_recovered_${Date.now()}`,
+      };
     }
 
     throw new SendAmbiguousError(err instanceof Error ? err.message : String(err));

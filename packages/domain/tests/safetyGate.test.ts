@@ -95,6 +95,23 @@ describe('7-Point Safety Gate', () => {
     expect(result.failedCheck).toBe(4);
   });
 
+  it('fails Check 4 when draft is null or undefined', () => {
+    const resultNull = verifyPreSendConditions({
+      ...validParams,
+      draft: null as any,
+    });
+    expect(resultNull.allowed).toBe(false);
+    expect(resultNull.failedCheck).toBe(4);
+    expect(resultNull.reason).toContain('Draft does not exist or is null');
+
+    const resultUndefined = verifyPreSendConditions({
+      ...validParams,
+      draft: undefined as any,
+    });
+    expect(resultUndefined.allowed).toBe(false);
+    expect(resultUndefined.failedCheck).toBe(4);
+  });
+
   it('fails Check 5 when draft content hash does not match approval hash', () => {
     const result = verifyPreSendConditions({
       ...validParams,

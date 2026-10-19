@@ -22,13 +22,10 @@ import {
 import {
   AuditAction,
   DraftStatus,
-  TaskType,
   TaskStatus,
-  ApprovalStatus,
-  ApprovalAction,
 } from '@client-agent/domain';
 import { STREAMS, createRedisClient, NonRetriableError } from '@client-agent/queue';
-import { VGenBrowserAdapter, SendAmbiguousError } from '@client-agent/vgen';
+import { VGenBrowserAdapter } from '@client-agent/vgen';
 import type { DiscordMessenger } from '@client-agent/discord';
 import { handleSendVgenMessage } from '../apps/worker/src/handlers/sendVgenMessage';
 import { app } from '../apps/api/src/app';

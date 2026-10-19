@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { createHash } from 'crypto';
 import {
   DraftStatus,
   DraftService,
@@ -198,6 +199,9 @@ describe('DraftService domain logic', () => {
     expect(state.approvals.length).toBe(1);
     expect(state.approvals[0]!.contentHash).toBeDefined();
     expect(state.approvals[0]!.contentHash).toHaveLength(64);
+    expect(state.approvals[0]!.contentHash).toBe(
+      createHash('sha256').update('Approved message text').digest('hex'),
+    );
     expect(state.audits[0]!.metadata?.contentHash).toBe(state.approvals[0]!.contentHash);
   });
 });

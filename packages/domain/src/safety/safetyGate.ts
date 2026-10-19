@@ -25,6 +25,14 @@ export function computeDraftHash(content: string): string {
 }
 
 export function verifyPreSendConditions(params: PreSendCheckParams): SafetyCheckResult {
+  if (!params.draft) {
+    return {
+      allowed: false,
+      failedCheck: 4,
+      reason: 'Check 4 Failed: Draft does not exist or is null',
+    };
+  }
+
   // Check 1: Target Conversation Exists and matches vgen
   if (
     !params.conversation ||

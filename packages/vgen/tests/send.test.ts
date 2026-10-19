@@ -132,6 +132,102 @@ describe('VGen Send Message Automation', () => {
     expect(result.messageId).toContain('vgen_recovered_');
   });
 
+  it('rejects ambiguous recovery when matching bubble is inbound from client', async () => {
+    let reloadCalled = false;
+    const mockPage: any = {
+      url: () => 'https://vgen.co/inbox/thread-123',
+      goto: async () => {},
+      waitForLoadState: async () => {},
+      reload: async () => {
+        reloadCalled = true;
+      },
+      locator: (selector: string) => ({
+        first: () => ({
+          waitFor: async () => {},
+          fill: async () => {},
+          click: async () => {
+            throw new Error('Network timeout during send click');
+          },
+          isVisible: async () => true,
+        }),
+        last: () => ({
+          waitFor: async () => {
+            throw new Error('Timeout');
+          },
+          innerText: async () => 'Old message',
+        }),
+        all: async () => [
+          {
+            innerText: async () => 'Inbound question from client',
+            getAttribute: async (attr: string) => {
+              if (attr === 'data-outbound') return 'false';
+              if (attr === 'class') return 'str-chat__message str-chat__message--other';
+              return null;
+            },
+            locator: () => ({
+              first: () => ({
+                innerText: async () => 'Client_Username',
+              }),
+            }),
+          },
+        ],
+      }),
+      waitForTimeout: async () => {},
+    };
+
+    await expect(
+      sendMessageOnPage(mockPage, {
+        conversationUrl: 'https://vgen.co/inbox/thread-123',
+        content: 'Inbound question from client',
+      }),
+    ).rejects.toThrow(SendAmbiguousError);
+
+    expect(reloadCalled).toBe(true);
+  });
+
+  it('recovers when bubble explicitly has data-outbound attribute', async () => {
+    const mockPage: any = {
+      url: () => 'https://vgen.co/inbox/thread-123',
+      goto: async () => {},
+      waitForLoadState: async () => {},
+      reload: async () => {},
+      locator: (selector: string) => ({
+        first: () => ({
+          waitFor: async () => {},
+          fill: async () => {},
+          click: async () => {
+            throw new Error('Network timeout during send click');
+          },
+          isVisible: async () => true,
+        }),
+        last: () => ({
+          waitFor: async () => {
+            throw new Error('Timeout');
+          },
+          innerText: async () => 'Old message',
+        }),
+        all: async () => [
+          {
+            innerText: async () => 'Outbound recovered message',
+            getAttribute: async (attr: string) => {
+              if (attr === 'data-outbound') return 'true';
+              return null;
+            },
+          },
+        ],
+      }),
+      waitForTimeout: async () => {},
+    };
+
+    const result = await sendMessageOnPage(mockPage, {
+      conversationUrl: 'https://vgen.co/inbox/thread-123',
+      content: 'Outbound recovered message',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.messageId).toContain('vgen_recovered_');
+  });
+
   describe('VGenBrowserAdapter sendMessage and getAuthenticatedUsername', () => {
     it('sendMessage succeeds using conversationUrl', async () => {
       let pageClosed = false;
