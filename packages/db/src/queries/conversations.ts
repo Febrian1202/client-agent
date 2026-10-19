@@ -26,6 +26,8 @@ export async function upsertConversation(input: UpsertConversationInput): Promis
   return rows[0]!;
 }
 
+export const insertConversation = upsertConversation;
+
 export async function findConversationByExternalId(platform: string, externalId: string): Promise<ConversationRow | null> {
   const rows = await db
     .select()

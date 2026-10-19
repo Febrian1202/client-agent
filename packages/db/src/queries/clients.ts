@@ -26,6 +26,8 @@ export async function upsertClient(input: UpsertClientInput): Promise<ClientRow>
   return rows[0]!;
 }
 
+export const insertClient = upsertClient;
+
 export async function getClientByUsername(userId: number, platform: string, username: string): Promise<ClientRow | null> {
   const rows = await db
     .select()

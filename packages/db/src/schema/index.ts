@@ -7,3 +7,5 @@ export * from './conversations';
 export * from './messages';
 export * from './audits';
 export * from './agent_runs';
+export * from './drafts';
+export * from './approvals';
