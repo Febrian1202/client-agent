@@ -23,7 +23,8 @@ This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions
 - **Phase 1 (Event Pipeline):** COMPLETED (Gmail Pub/Sub → VGen parser → PostgreSQL dedup → Redis Streams → Bun Worker → Discord REST notifications).
 - **Phase 2 (Worker Hardening):** COMPLETED (Task state machine, backoff retries, dead-letter recovery, graceful shutdown, task REST APIs).
 - **Phase 3 (VGen Reader):** COMPLETED (Playwright session reuse, PlatformAdapter, VGen reader, `/read` command).
-- **Phase 4 – 8:** Next up: Phase 4 (AI Agent).
+- **Phase 4 (AI Agent):** COMPLETED (OpenAI-compatible / 9router provider abstraction, agent_runs logging, tool registry, anti-slop prompt architecture, `/summarize` & `/reply` commands).
+- **Phase 5 – 8:** Next up: Phase 5 (Approval System).
 
 ---
 
@@ -109,8 +110,8 @@ Before implementing any feature, read the relevant specification in `docs/`:
   - `docs/phase/phase-1-event-pipeline.md` — **[COMPLETED]** Gmail Pub/Sub → parser → deduplication → Discord notification.
   - `docs/phase/phase-2-worker-hardening.md` — **[COMPLETED]** State machine, backoff retries, dead-letter recovery, graceful shutdown.
   - `docs/phase/phase-3-vgen-reader.md` — **[COMPLETED]** Playwright session reuse, PlatformAdapter, VGen reader, `/read` command.
-  - `docs/phase/phase-4-ai-agent.md` — **[NEXT UP]** LLM abstraction, tool calling, prompt layers, summarization, `/summarize` & `/reply`.
-  - `docs/phase/phase-5-approval-system.md` — Draft state machine, approval invalidation, Discord interactive buttons.
+  - `docs/phase/phase-4-ai-agent.md` — **[COMPLETED]** LLM abstraction, tool calling, prompt layers, summarization, `/summarize` & `/reply`.
+  - `docs/phase/phase-5-approval-system.md` — **[NEXT UP]** Draft state machine, approval invalidation, Discord interactive buttons.
   - `docs/phase/phase-6-vgen-send.md` — VGen sending automation, 7-point safety gate, post-send verification, audit logs.
   - `docs/phase/phase-7-dashboard.md` — SvelteKit web dashboard UI for tasks, conversations, drafts, clients, logs.
   - `docs/phase/phase-8-client-memory.md` — Persistent client context (`FACT`, `PREFERENCE`, `INFERENCE`).
