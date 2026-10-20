@@ -58,10 +58,16 @@ describe('checkVGenAuthStatus', () => {
           contentType: 'text/html',
           body: `<html><body><h1>Login</h1></body></html>`,
         });
-      } else {
+      } else if (url.includes('/creator')) {
         route.fulfill({
           status: 302,
           headers: { location: 'https://vgen.co/login' },
+          body: '',
+        });
+      } else {
+        route.fulfill({
+          status: 200,
+          contentType: 'text/plain',
           body: '',
         });
       }

@@ -154,58 +154,57 @@ describe('VGenBrowserAdapter.getConversation', () => {
   test(
     'Case 4 (DI): createPage/closePage spies are called on success AND on error paths',
     async () => {
-      // Success path: closePage called in finally
-      {
-        const ctx = await makeIsolatedCtx();
-        const page = await ctx.newPage();
+      const ctx = await makeIsolatedCtx();
+      try {
+        // Success path: closePage called in finally
+        {
+          const page = await ctx.newPage();
 
-        await page.route('**/vgen.co/**', (route) => {
-          const url = route.request().url();
-          if (url.includes('/creator') || url.includes('/dashboard')) {
-            route.fulfill({ status: 200, contentType: 'text/html', body: makeDashboardHtml() });
-          } else if (url.includes('/inbox/abc123')) {
-            route.fulfill({ status: 200, contentType: 'text/html', body: threadHtml });
-          } else if (url.includes('/inbox')) {
-            route.fulfill({ status: 200, contentType: 'text/html', body: inboxHtml });
-          } else {
-            route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body></body></html>' });
-          }
-        });
+          await page.route('**/vgen.co/**', (route) => {
+            const url = route.request().url();
+            if (url.includes('/creator') || url.includes('/dashboard')) {
+              route.fulfill({ status: 200, contentType: 'text/html', body: makeDashboardHtml() });
+            } else if (url.includes('/inbox/abc123')) {
+              route.fulfill({ status: 200, contentType: 'text/html', body: threadHtml });
+            } else if (url.includes('/inbox')) {
+              route.fulfill({ status: 200, contentType: 'text/html', body: inboxHtml });
+            } else {
+              route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body></body></html>' });
+            }
+          });
 
-        let createPageCalls = 0;
-        let closePageCalls = 0;
-        const adapter = new VGenBrowserAdapter({
-          createPage: async () => { createPageCalls++; return page; },
-          closePage: async (p) => { closePageCalls++; await p.close(); },
-        });
+          let createPageCalls = 0;
+          let closePageCalls = 0;
+          const adapter = new VGenBrowserAdapter({
+            createPage: async () => { createPageCalls++; return page; },
+            closePage: async (p) => { closePageCalls++; await p.close(); },
+          });
 
-        await adapter.getConversation({ clientUsername: 'ErianOsamu', limit: 20 });
-        expect(createPageCalls).toBe(1);
-        expect(closePageCalls).toBe(1);
+          await adapter.getConversation({ clientUsername: 'ErianOsamu', limit: 20 });
+          expect(createPageCalls).toBe(1);
+          expect(closePageCalls).toBe(1);
+        }
 
-        await ctx.close();
-      }
+        // Error path (expired): closePage still called in finally
+        {
+          const page = await ctx.newPage();
 
-      // Error path (expired): closePage still called in finally
-      {
-        const ctx = await makeIsolatedCtx();
-        const page = await ctx.newPage();
+          await page.route('**/vgen.co/**', (route) => {
+            route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>not logged in</body></html>' });
+          });
 
-        await page.route('**/vgen.co/**', (route) => {
-          route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>not logged in</body></html>' });
-        });
+          let closePageCalls = 0;
+          const adapter = new VGenBrowserAdapter({
+            createPage: async () => page,
+            closePage: async (p) => { closePageCalls++; await p.close(); },
+          });
 
-        let closePageCalls = 0;
-        const adapter = new VGenBrowserAdapter({
-          createPage: async () => page,
-          closePage: async (p) => { closePageCalls++; await p.close(); },
-        });
-
-        await expect(
-          adapter.getConversation({ clientUsername: 'ErianOsamu' }),
-        ).rejects.toBeInstanceOf(SessionExpiredError);
-        expect(closePageCalls).toBe(1);
-
+          await expect(
+            adapter.getConversation({ clientUsername: 'ErianOsamu' }),
+          ).rejects.toBeInstanceOf(SessionExpiredError);
+          expect(closePageCalls).toBe(1);
+        }
+      } finally {
         await ctx.close();
       }
     },
