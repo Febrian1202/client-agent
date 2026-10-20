@@ -26,7 +26,8 @@ This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions
 - **Phase 4 (AI Agent):** COMPLETED (OpenAI-compatible / 9router provider abstraction, agent_runs logging, tool registry, anti-slop prompt architecture, `/summarize` & `/reply` commands).
 - **Phase 5 (Approval System):** COMPLETED (Draft state machine, approval invalidation on content edits, REST API `/api/v1/drafts`, Discord interactive buttons & edit modal, approvals table & SHA-256 contentHash tracking, immutable audit logs).
 - **Phase 6 (VGen Send):** COMPLETED (7-point safety gate, browser send automation & ambiguous recovery, SEND_VGEN_MESSAGE worker handler, REST API POST /drafts/:id/send, Discord approve auto-dispatch, live profile extraction & thread drawer opening, E2E test suite).
-- **Phase 7 – 8:** Upcoming: Phase 7 (Web Dashboard), Phase 8 (Client Memory).
+- **Phase 7 (Web Dashboard):** READY FOR IMPLEMENTATION (Design system codified in `DESIGN.md`, interactive dashboard mockup preserved in `docs/pen/ui.pen`).
+- **Phase 8 (Client Memory):** Upcoming: Persistent client context (`FACT`, `PREFERENCE`, `INFERENCE`).
 
 ---
 
@@ -115,7 +116,7 @@ Before implementing any feature, read the relevant specification in `docs/`:
   - `docs/phase/phase-4-ai-agent.md` — **[COMPLETED]** LLM abstraction, tool calling, prompt layers, summarization, `/summarize` & `/reply`.
   - `docs/phase/phase-5-approval-system.md` — **[COMPLETED]** Draft state machine, approval invalidation on content edits, Discord interactive buttons & edit modal, contentHash tracking.
   - `docs/phase/phase-6-vgen-send.md` — **[IN PROGRESS / READY FOR CALIBRATION]** VGen sending automation, 7-point safety gate, post-send verification, ambiguous recovery, audit logs.
-  - `docs/phase/phase-7-dashboard.md` — SvelteKit web dashboard UI for tasks, conversations, drafts, clients, logs.
+  - `docs/phase/phase-7-dashboard.md` — SvelteKit web dashboard UI for tasks, conversations, drafts, clients, commissions, and logs. **MUST strictly adhere to `DESIGN.md` tokens and the visual layout in `docs/pen/ui.pen`.**
   - `docs/phase/phase-8-client-memory.md` — Persistent client context (`FACT`, `PREFERENCE`, `INFERENCE`).
 
 ---
@@ -175,3 +176,4 @@ When executing tasks or implementing phases:
 4. **Preserve types and contracts:** Keep `@client-agent/domain` pure and decoupled from framework dependencies.
 5. **No AI slop in code comments:** Write clean, self-documenting TypeScript. Avoid redundant comments explaining what standard code does.
 6. **Keep audit logs immutable:** The `audit_logs` table must never be updated or deleted. Every critical state change must produce an audit record.
+7. **Frontend Design Fidelity:** For Phase 7 (`apps/web`), always adhere to the design tokens in `DESIGN.md` and replicate the visual layout codified in `docs/pen/ui.pen`. Do NOT default to generic AI themes (e.g. dark purple gradients or sterile grays).
