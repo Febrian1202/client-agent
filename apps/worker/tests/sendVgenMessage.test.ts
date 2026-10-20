@@ -153,4 +153,39 @@ describe('Worker: SEND_VGEN_MESSAGE Handler', () => {
     expect(completedOutput).toEqual({ success: true, messageId: 'msg-999' });
     expect(discordNotification).toContain('Message successfully delivered to @client on VGen!');
   });
+
+  it('normalizes creator username from URL or symbol into a clean slug', async () => {
+    let insertedMessage: any = null;
+
+    const mockDeps: any = {
+      getDraft: async () => ({
+        id: 2,
+        conversationId: 20,
+        content: 'Hello client!',
+        status: DraftStatus.APPROVED,
+        createdAt: new Date(),
+      }),
+      getConversation: async () => ({ id: 20, clientId: 200, platform: 'vgen', externalUrl: 'https://vgen.co/20' }),
+      getClient: async () => ({ id: 200, username: 'client' }),
+      getApprovals: async () => [{ id: 2, draftId: 2, status: 'active', action: 'approve', contentHash: 'abc' }],
+      getLatestInboundMessage: async () => null,
+      getCreatorUsername: () => 'https://vgen.co/r1daz_',
+      adapter: {
+        getAuthenticatedUsername: async () => 'r1daz_',
+        sendMessage: async (_input: any) => ({ success: true, messageId: 'msg-1000' }),
+      },
+      insertAuditLog: async () => {},
+      markTaskDead: async () => {},
+      markTaskCompleted: async () => {},
+      updateDraft: async () => {},
+      insertMessage: async (_convId: number, data: any) => { insertedMessage = data; },
+      messenger: { sendChannelMessage: async () => {} },
+      computeHash: () => 'abc',
+    };
+
+    const task: any = { id: 'stream-2', data: { taskId: 43, draftId: 2 } };
+    await handleSendVgenMessage(task, mockDeps);
+
+    expect(insertedMessage.senderName).toBe('r1daz_');
+  });
 });

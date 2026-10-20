@@ -11,6 +11,7 @@ export interface DraftInteractionDeps {
   rejectDraft: (input: { draftId: number; userId?: number | string; reason?: string }) => Promise<unknown>;
   updateDraftContent: (input: { draftId: number; newContent: string; userId?: number | string }) => Promise<unknown>;
   getDraftContent?: (draftId: number) => Promise<string | null | undefined>;
+  sendDraft?: (input: { draftId: number; userId?: number | string }) => Promise<{ taskId: number } | void>;
 }
 
 function clampMessageWithSuffix(baseContent: string, suffix: string): string {
@@ -42,8 +43,15 @@ export async function handleDraftButtonInteraction(
 
   if (action === 'approve_draft') {
     await deps.approveDraft({ draftId, userId });
-    const statusRow = buildDraftStatusRow('approved', actorName);
-    const suffix = `\n\n✅ Approved by ${actorName}`;
+    let statusRow = buildDraftStatusRow('approved', actorName);
+    let suffix = `\n\n✅ Approved by ${actorName}`;
+
+    if (deps.sendDraft) {
+      await deps.sendDraft({ draftId, userId });
+      statusRow = buildDraftStatusRow('sending');
+      suffix = `\n\n✅ Approved by ${actorName} — ⏳ Sending to VGen...`;
+    }
+
     const baseContent = (interaction.message?.content ?? '').replace(/\n\n[✅❌].*$/, '').trim();
     const content = clampMessageWithSuffix(baseContent, suffix);
 

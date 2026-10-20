@@ -27,6 +27,11 @@ describe('Discord Draft Buttons and Modals', () => {
     expect(rejectRow.components.length).toBe(1);
     expect((rejectRow.components[0]?.data as any).disabled).toBe(true);
     expect((rejectRow.components[0]?.data as any).label).toContain('Rejected');
+
+    const sendingRow = buildDraftStatusRow('sending');
+    expect(sendingRow.components.length).toBe(1);
+    expect((sendingRow.components[0]?.data as any).disabled).toBe(true);
+    expect((sendingRow.components[0]?.data as any).label).toBe('✅ Approved — Sending...');
   });
 
   it('builds a modal for editing draft text', () => {
@@ -61,6 +66,45 @@ describe('Discord Draft Buttons and Modals', () => {
     await handleDraftButtonInteraction(mockButtonInteraction, deps);
     expect(approvedDraftId as any).toBe(42);
     expect(updatedPayload.content).toContain('Approved by Creator');
+  });
+
+  it('handles approve button click with sendDraft by invoking sendDraft and updating message with sending status', async () => {
+    let approvedDraftId: number | null = null;
+    let sentDraftId: number | null = null;
+    let sentUserId: any = null;
+    let updatedPayload: any = null;
+
+    const deps: DraftInteractionDeps = {
+      approveDraft: async ({ draftId }) => {
+        approvedDraftId = draftId;
+      },
+      sendDraft: async ({ draftId, userId }) => {
+        sentDraftId = draftId;
+        sentUserId = userId;
+        return { taskId: 99 };
+      },
+      rejectDraft: async () => {},
+      updateDraftContent: async () => {},
+      getDraftContent: async () => 'test',
+    };
+
+    const mockButtonInteraction: any = {
+      isButton: () => true,
+      isModalSubmit: () => false,
+      customId: 'approve_draft:42',
+      user: { id: 'user1', username: 'Creator' },
+      message: { content: 'Original message' },
+      update: async (payload: any) => {
+        updatedPayload = payload;
+      },
+    };
+
+    await handleDraftButtonInteraction(mockButtonInteraction, deps);
+    expect(approvedDraftId as any).toBe(42);
+    expect(sentDraftId as any).toBe(42);
+    expect(sentUserId).toBe('user1');
+    expect(updatedPayload.content).toContain('✅ Approved by Creator — ⏳ Sending to VGen...');
+    expect(updatedPayload.components[0].components[0].data.label).toBe('✅ Approved — Sending...');
   });
 
   it('handles reject button click by invoking service and updating message', async () => {

@@ -35,12 +35,37 @@ export interface BotEnqueuerOptions {
   draftDeps?: DraftInteractionDeps;
 }
 
-export function createDefaultDraftInteractionDeps(): DraftInteractionDeps {
+export function createDefaultDraftInteractionDeps(
+  options?: BotEnqueuerOptions,
+): DraftInteractionDeps {
   return {
     approveDraft: async ({ draftId, userId }) => {
       const ownerId = await getOwnerUserId();
       const resolvedUserId = typeof userId === 'number' ? userId : ownerId;
       return await draftService.approveDraft({ draftId, userId: resolvedUserId });
+    },
+    sendDraft: async ({ draftId, userId }) => {
+      const ownerId = await getOwnerUserId();
+      const resolvedUserId = typeof userId === 'number' ? userId : ownerId;
+      const draft = await getDraftById(draftId);
+      if (!draft) return;
+      const idempotencyKey = `send_draft_${draft.id}_${new Date(draft.updatedAt).getTime()}`;
+      let task = await findTaskByIdempotencyKey(idempotencyKey);
+      if (!task) {
+        task = await createTask({
+          userId: resolvedUserId,
+          type: TaskType.SEND_VGEN_MESSAGE,
+          input: { draftId: draft.id, userId: resolvedUserId },
+          idempotencyKey,
+        });
+      }
+      const publisher = options?.publisher ?? publishTask;
+      await publisher(STREAMS.SEND, {
+        taskId: String(task.id),
+        draftId: String(draft.id),
+        userId: String(resolvedUserId),
+      });
+      return { taskId: task.id };
     },
     rejectDraft: async ({ draftId, userId, reason }) => {
       const ownerId = await getOwnerUserId();
@@ -185,7 +210,7 @@ export async function startWorkerDiscordBot(
 
   if (!readEnqueue || !summarizeEnqueue || !replyEnqueue) return null;
 
-  const draftDeps = options?.draftDeps ?? createDefaultDraftInteractionDeps();
+  const draftDeps = options?.draftDeps ?? createDefaultDraftInteractionDeps(options);
 
   const commands = [READ_COMMAND, SUMMARIZE_COMMAND, REPLY_COMMAND];
 

@@ -32,7 +32,10 @@ export function buildDraftStatusRow(
   let label: string;
   let style: ButtonStyle = ButtonStyle.Secondary;
 
-  if (normalized.includes('approve')) {
+  if (normalized.includes('sending')) {
+    label = '✅ Approved — Sending...';
+    style = ButtonStyle.Success;
+  } else if (normalized.includes('approve')) {
     label = actorName ? `✅ Approved by ${actorName}` : '✅ Approved';
     style = ButtonStyle.Success;
   } else if (normalized.includes('reject')) {

@@ -18,6 +18,7 @@ import {
   listDrafts,
 } from '@client-agent/db';
 import { TaskType } from '@client-agent/domain';
+import { STREAMS } from '@client-agent/queue';
 import {
   createInteractionRouter,
   handleDraftButtonInteraction,
@@ -129,7 +130,15 @@ describe('Generate Reply Draft Worker Integration', () => {
     expect((completedTask?.output as any).draftId).toBe(draft.id);
 
     // 4. Test button approval interaction through bot routing
-    const draftDeps = createDefaultDraftInteractionDeps();
+    let publishedStream: any = null;
+    let publishedPayload: any = null;
+    const mockPublisher = async (stream: string, payload: Record<string, unknown>) => {
+      publishedStream = stream;
+      publishedPayload = payload;
+      return 'mock-msg-id';
+    };
+
+    const draftDeps = createDefaultDraftInteractionDeps({ publisher: mockPublisher });
     let updatedMessage: any = null;
     const approveInteraction: any = {
       isButton: () => true,
@@ -160,7 +169,14 @@ describe('Generate Reply Draft Worker Integration', () => {
     await router(approveInteraction);
     const approvedDraft = await getDraftById(draft.id);
     expect(approvedDraft?.status).toBe('approved');
-    expect(updatedMessage?.content).toContain('✅ Approved by TestCreator');
+    expect(updatedMessage?.content).toContain('✅ Approved by TestCreator — ⏳ Sending to VGen...');
+    expect((updatedMessage?.components[0]?.components[0]?.data as any).label).toBe('✅ Approved — Sending...');
+    expect(publishedStream).toBe(STREAMS.SEND);
+    expect(publishedPayload).toBeDefined();
+    expect(publishedPayload?.draftId).toBe(String(draft.id));
+    if (publishedPayload?.taskId) {
+      createdTaskIds.push(Number(publishedPayload.taskId));
+    }
 
     // 5. Test modal edit interaction through bot routing (should revert to pending_approval)
     let modalUpdatedMessage: any = null;

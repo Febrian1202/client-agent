@@ -9,8 +9,12 @@ import {
   markTaskDead,
   updateDraft,
 } from '@client-agent/db';
-import { AuditAction, DraftStatus } from '@client-agent/domain';
-import { verifyPreSendConditions } from '@client-agent/domain';
+import {
+  AuditAction,
+  DraftStatus,
+  normalizeCreatorUsername,
+  verifyPreSendConditions,
+} from '@client-agent/domain';
 import { NonRetriableError, type ParsedTask } from '@client-agent/queue';
 import { SendAmbiguousError } from '@client-agent/vgen';
 import type { DiscordMessenger } from '@client-agent/discord';
@@ -114,9 +118,10 @@ export async function handleSendVgenMessage(
     latestInboundMessage = inbound.length > 0 ? inbound[inbound.length - 1] : null;
   }
 
-  const creatorUsername = deps?.getCreatorUsername
+  const rawCreatorUsername = deps?.getCreatorUsername
     ? deps.getCreatorUsername()
     : (process.env.VGEN_CREATOR_USERNAME || 'r1daz_');
+  const creatorUsername = normalizeCreatorUsername(rawCreatorUsername) || 'r1daz_';
 
   let authenticatedCreatorUsername: string | null = null;
   try {
