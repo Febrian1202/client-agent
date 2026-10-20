@@ -121,6 +121,26 @@ export class VGenBrowserAdapter implements PlatformAdapter {
         await targetPage.goto(VGEN_DASHBOARD_URL, { waitUntil: 'domcontentloaded' });
       }
 
+      // If profile link is still hydrating (e.g. href="https://vgen.co/undefined"), wait for React hydration
+      if (typeof targetPage.waitForFunction === 'function') {
+        await targetPage
+          .waitForFunction(
+            (selector) => {
+              const links = document.querySelectorAll(selector);
+              for (const link of links) {
+                const href = link.getAttribute('href') || '';
+                if (href.includes('vgen.co') && !href.includes('/undefined') && !href.includes('/null')) {
+                  return true;
+                }
+              }
+              return false;
+            },
+            CREATOR_PROFILE_MARKER,
+            { timeout: 7000 },
+          )
+          .catch(() => {});
+      }
+
       const locator = targetPage.locator(CREATOR_PROFILE_MARKER);
       let elements = typeof locator.all === 'function' ? await locator.all() : [];
       if (elements.length === 0) {

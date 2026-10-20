@@ -12,7 +12,8 @@ export const MESSAGE_BODY_SELECTOR = '[data-testid="message-body"]';
 export const MESSAGE_TIME_SELECTOR = 'time';
 export const OUTBOUND_MARKER = 'data-outbound'; // attribute on outbound message blocks
 export const MESSAGE_INPUT_SELECTOR = '[data-testid="message-input"], textarea[placeholder*="message" i], .str-chat__textarea textarea';
-export const SEND_BUTTON_SELECTOR = '[data-testid="send-button"], button[type="submit"], button:has-text("Send")';
+export const SEND_BUTTON_SELECTOR =
+  'button.sendButton, button:has(.sendIconContainer), [data-testid="send-button"], button[type="submit"], button:has-text("Send")';
 export const CREATOR_PROFILE_MARKER =
   'a:has(.profileLinkButton), a.profileLinkButton, button.profileLinkButton, a[href^="https://vgen.co/"][target="_blank"], a[href*="vgen.co/"][target="_blank"], [data-testid="user-username"], [data-testid="user-avatar"] [alt]';
 export const NON_PROFILE_PATHS = [
@@ -41,4 +42,6 @@ export const NON_PROFILE_PATHS = [
   'careers',
   'auth',
   'logout',
+  'undefined',
+  'null',
 ];
