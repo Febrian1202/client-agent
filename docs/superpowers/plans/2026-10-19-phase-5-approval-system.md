@@ -1,6 +1,6 @@
 # Phase 5 — Approval System Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a strict human-in-the-loop approval workflow for message drafts, complete with state machine transitions, approval invalidation upon editing, REST API endpoints, and interactive Discord action buttons (`[Approve ✅]`, `[Edit ✏️]`, `[Reject ❌]`) and editing modals.
 
@@ -81,7 +81,7 @@
   - Types: `DraftRow`, `InsertDraftRow`, `ApprovalRow`, `InsertApprovalRow`
   - Queries: `insertDraft`, `getDraftById`, `listDrafts`, `updateDraft`, `insertApproval`, `revokeApprovalsForDraft`, `getApprovalsByDraftId`, `getDraftWithContext`
 
-- [ ] **Step 1: Write the failing schema and query test**
+- [x] **Step 1: Write the failing schema and query test**
 
 In `packages/db/tests/drafts.test.ts`:
 ```ts
@@ -166,12 +166,12 @@ describe('drafts and approvals schema & queries', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun test packages/db/tests/drafts.test.ts`
 Expected: FAIL — cannot resolve `insertDraft`, `getDraftById`, etc.
 
-- [ ] **Step 3: Define schemas in `packages/db/src/schema/`**
+- [x] **Step 3: Define schemas in `packages/db/src/schema/`**
 
 Create `packages/db/src/schema/drafts.ts`:
 ```ts
@@ -228,7 +228,7 @@ export type InsertApprovalRow = typeof approvals.$inferInsert;
 Update `packages/db/src/schema/index.ts`:
 Export `drafts`, `approvals`, and their Row types.
 
-- [ ] **Step 4: Create queries in `packages/db/src/queries/drafts.ts` and export in `queries/index.ts`**
+- [x] **Step 4: Create queries in `packages/db/src/queries/drafts.ts` and export in `queries/index.ts`**
 
 Implement:
 - `insertDraft(data: InsertDraftRow)`
@@ -240,7 +240,7 @@ Implement:
 - `getApprovalsByDraftId(draftId: number)`
 - `getDraftWithContext(id: number)` (joins draft, conversation, and active approvals)
 
-- [ ] **Step 5: Run Drizzle migration and verify tests pass**
+- [x] **Step 5: Run Drizzle migration and verify tests pass**
 
 Run:
 ```bash
@@ -250,7 +250,7 @@ bun test packages/db/tests/drafts.test.ts
 ```
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/db/src/schema/drafts.ts packages/db/src/schema/approvals.ts packages/db/src/schema/index.ts packages/db/src/queries/drafts.ts packages/db/src/queries/index.ts packages/db/drizzle packages/db/tests/drafts.test.ts
@@ -278,7 +278,7 @@ git commit -m "feat(db): add drafts and approvals schema, migrations, and querie
   - `updateDraftContent(repo, params)`
   - Error classes: `DraftNotFoundError`, `InvalidDraftStateError`, `DraftContentEmptyError`
 
-- [ ] **Step 1: Write the failing domain service test**
+- [x] **Step 1: Write the failing domain service test**
 
 In `packages/domain/tests/draftService.test.ts`:
 ```ts
@@ -416,12 +416,12 @@ describe('DraftService domain logic', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun test packages/domain/tests/draftService.test.ts`
 Expected: FAIL — `DraftService` and error classes not defined.
 
-- [ ] **Step 3: Implement `DraftService` in `packages/domain/src/services/draftService.ts`**
+- [x] **Step 3: Implement `DraftService` in `packages/domain/src/services/draftService.ts`**
 
 Define:
 - Errors: `DraftNotFoundError`, `InvalidDraftStateError`, `DraftContentEmptyError`
@@ -433,16 +433,16 @@ Define:
   - `updateDraftContent(params: { draftId: number; newContent: string; userId: number })`
 - Export from `packages/domain/src/index.ts`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bun test packages/domain/tests/draftService.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Provide DB Repository Adapter in `packages/db`**
+- [x] **Step 5: Provide DB Repository Adapter in `packages/db`**
 
 In `packages/db/src/queries/drafts.ts`, export `createDbDraftRepository(): DraftRepository` and a ready-to-use `draftService` instance wired to PostgreSQL queries.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/domain/src/services/draftService.ts packages/domain/src/index.ts packages/domain/tests/draftService.test.ts packages/db/src/queries/drafts.ts
@@ -468,7 +468,7 @@ git commit -m "feat(domain): implement pure DraftService state machine and repos
   - `POST /api/v1/drafts/:id/approve`: approves draft. Returns 200.
   - `POST /api/v1/drafts/:id/reject`: rejects draft (`{ reason? }`). Returns 200.
 
-- [ ] **Step 1: Write failing API route test**
+- [x] **Step 1: Write failing API route test**
 
 In `apps/api/tests/drafts.test.ts`:
 ```ts
@@ -548,12 +548,12 @@ describe('Drafts API (/api/v1/drafts)', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun test apps/api/tests/drafts.test.ts`
 Expected: FAIL (404 or route not found).
 
-- [ ] **Step 3: Implement `apps/api/src/routes/drafts.ts` and mount in `apps/api/src/app.ts`**
+- [x] **Step 3: Implement `apps/api/src/routes/drafts.ts` and mount in `apps/api/src/app.ts`**
 
 Define schema validation with TypeBox (`t.Object`, `t.String`, `t.Number`, `t.Optional`):
 - `GET /` with query options
@@ -564,12 +564,12 @@ Define schema validation with TypeBox (`t.Object`, `t.String`, `t.Number`, `t.Op
 - `POST /:id/reject`
 Map domain errors (`DraftNotFoundError` -> 404, `InvalidDraftStateError` -> 409) to standard API error responses `{ error: { code, message } }`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bun test apps/api/tests/drafts.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/routes/drafts.ts apps/api/src/app.ts apps/api/tests/drafts.test.ts
@@ -597,7 +597,7 @@ git commit -m "feat(api): implement /api/v1/drafts CRUD and state machine endpoi
   - `handleDraftModalSubmitInteraction(interaction: ModalSubmitInteraction, deps: DraftInteractionDeps)`
   - Extended `DiscordMessenger` with `components` support.
 
-- [ ] **Step 1: Write failing test for Discord components and interaction routing**
+- [x] **Step 1: Write failing test for Discord components and interaction routing**
 
 In `packages/discord/tests/draft-components.test.ts`:
 ```ts
@@ -655,12 +655,12 @@ describe('Discord Draft Buttons and Modals', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun test packages/discord/tests/draft-components.test.ts`
 Expected: FAIL — functions not defined.
 
-- [ ] **Step 3: Implement Discord components in `packages/discord/src/components/draftButtons.ts`**
+- [x] **Step 3: Implement Discord components in `packages/discord/src/components/draftButtons.ts`**
 
 Use `ActionRowBuilder`, `ButtonBuilder`, `ButtonStyle`, `ModalBuilder`, `TextInputBuilder`, `TextInputStyle` from `discord.js`:
 - Button 1: `approve_draft:<draftId>`, Success style, "Approve ✅"
@@ -668,7 +668,7 @@ Use `ActionRowBuilder`, `ButtonBuilder`, `ButtonStyle`, `ModalBuilder`, `TextInp
 - Button 3: `reject_draft:<draftId>`, Danger style, "Reject ❌"
 - Modal: `modal_edit_draft:<draftId>` with multiline TextInput `draft_content`.
 
-- [ ] **Step 4: Implement interaction handlers in `packages/discord/src/interactions/draftInteractions.ts`**
+- [x] **Step 4: Implement interaction handlers in `packages/discord/src/interactions/draftInteractions.ts`**
 
 Implement `handleDraftButtonInteraction` and `handleDraftModalSubmitInteraction`:
 - On `approve_draft:<id>`: call `deps.approveDraft({ draftId, userId })`, update message with confirmation text and remove/disable action buttons.
@@ -676,17 +676,17 @@ Implement `handleDraftButtonInteraction` and `handleDraftModalSubmitInteraction`
 - On `edit_draft:<id>`: fetch draft text, call `interaction.showModal(buildEditDraftModal(id, content))`.
 - On `modal_edit_draft:<id>`: get text from `interaction.fields.getTextInputValue('draft_content')`, call `deps.updateDraftContent({ draftId, newContent, userId })`, update message with new content and fresh action row.
 
-- [ ] **Step 5: Extend `createInteractionRouter` in `packages/discord/src/bot.ts` and `DiscordMessenger` in `client.ts`**
+- [x] **Step 5: Extend `createInteractionRouter` in `packages/discord/src/bot.ts` and `DiscordMessenger` in `client.ts`**
 
 Allow router to dispatch `ButtonInteraction` and `ModalSubmitInteraction` in addition to chat commands.
 Allow `DiscordMessenger` methods (`editInteractionFollowup`, `sendChannelMessage`) to optionally accept `components?: unknown[]`.
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `bun test packages/discord/tests/draft-components.test.ts`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/discord/src/components packages/discord/src/interactions packages/discord/src/bot.ts packages/discord/src/client.ts packages/discord/src/index.ts packages/discord/tests/draft-components.test.ts
@@ -710,7 +710,7 @@ git commit -m "feat(discord): add interactive draft buttons, edit modal, and int
   - Sends/edits Discord message with the draft text + action buttons.
   - Worker Discord bot handles button clicks & modal edits directly.
 
-- [ ] **Step 1: Write failing handler test**
+- [x] **Step 1: Write failing handler test**
 
 In `apps/worker/tests/reply-draft-approval.test.ts`:
 ```ts
@@ -799,12 +799,12 @@ describe('Generate Reply Draft Worker Integration', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun test apps/worker/tests/reply-draft-approval.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Update `apps/worker/src/handlers/generateReplyDraft.ts`**
+- [x] **Step 3: Update `apps/worker/src/handlers/generateReplyDraft.ts`**
 
 - After LLM creates draft content:
   - Lookup or create conversation for the client.
@@ -813,19 +813,19 @@ Expected: FAIL.
   - Log audit `AuditAction.AGENT_GENERATED_DRAFT`.
   - Attach `buildDraftActionRow(draft.id).toJSON()` to Discord messenger options.
 
-- [ ] **Step 4: Update `apps/worker/src/bot.ts`**
+- [x] **Step 4: Update `apps/worker/src/bot.ts`**
 
 Wire the interactive button and modal submit router in `startWorkerDiscordBot`:
 - When interaction is button matching `_draft:`, call `handleDraftButtonInteraction`.
 - When interaction is modal submit matching `modal_edit_draft:`, call `handleDraftModalSubmitInteraction`.
 - Delegate to DB/domain service to perform state changes and audit logging.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `bun test apps/worker/tests/reply-draft-approval.test.ts`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/worker/src/handlers/generateReplyDraft.ts apps/worker/src/bot.ts apps/worker/src/services/discord.ts apps/worker/tests/reply-draft-approval.test.ts
@@ -843,22 +843,22 @@ git commit -m "feat(worker): connect reply draft generation with drafts DB table
 - Tests complete flow:
   Draft Generation → PENDING_APPROVAL → Discord Button Approve → APPROVED → Content Edit (API/Modal) → Approval Revoked & PENDING_APPROVAL → Reject → REJECTED → Audit Logs.
 
-- [ ] **Step 1: Write end-to-end integration test**
+- [x] **Step 1: Write end-to-end integration test**
 
 In `tests/e2e-approval-system.test.ts`:
 Verify the complete approval lifecycle, state transitions, rejection, approval invalidation on edit, and audit log generation against real Postgres and Elysia app.
 
-- [ ] **Step 2: Run the test suite**
+- [x] **Step 2: Run the test suite**
 
 Run: `bun test tests/e2e-approval-system.test.ts`
 Expected: PASS
 
-- [ ] **Step 3: Run full repository regression test suite**
+- [x] **Step 3: Run full repository regression test suite**
 
 Run: `bun test`
 Expected: All tests pass with zero regressions.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e-approval-system.test.ts

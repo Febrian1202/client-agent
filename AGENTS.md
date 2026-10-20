@@ -24,8 +24,9 @@ This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions
 - **Phase 2 (Worker Hardening):** COMPLETED (Task state machine, backoff retries, dead-letter recovery, graceful shutdown, task REST APIs).
 - **Phase 3 (VGen Reader):** COMPLETED (Playwright session reuse, PlatformAdapter, VGen reader, `/read` command).
 - **Phase 4 (AI Agent):** COMPLETED (OpenAI-compatible / 9router provider abstraction, agent_runs logging, tool registry, anti-slop prompt architecture, `/summarize` & `/reply` commands).
-- **Phase 5 (Approval System):** COMPLETED (Draft state machine, approval invalidation on content edits, REST API `/api/v1/drafts`, Discord interactive buttons & edit modal, audit logs).
-- **Phase 6 – 8:** Next up: Phase 6 (VGen Send).
+- **Phase 5 (Approval System):** COMPLETED (Draft state machine, approval invalidation on content edits, REST API `/api/v1/drafts`, Discord interactive buttons & edit modal, approvals table & SHA-256 contentHash tracking, immutable audit logs).
+- **Phase 6 (VGen Send):** IN PROGRESS / READY FOR CALIBRATION (7-point safety gate, browser send automation & ambiguous recovery, SEND_VGEN_MESSAGE worker handler, REST API POST /drafts/:id/send, E2E test suite; next: Discord approve auto-dispatch & live VGen DOM selector calibration).
+- **Phase 7 – 8:** Upcoming: Phase 7 (Web Dashboard), Phase 8 (Client Memory).
 
 ---
 
@@ -112,8 +113,8 @@ Before implementing any feature, read the relevant specification in `docs/`:
   - `docs/phase/phase-2-worker-hardening.md` — **[COMPLETED]** State machine, backoff retries, dead-letter recovery, graceful shutdown.
   - `docs/phase/phase-3-vgen-reader.md` — **[COMPLETED]** Playwright session reuse, PlatformAdapter, VGen reader, `/read` command.
   - `docs/phase/phase-4-ai-agent.md` — **[COMPLETED]** LLM abstraction, tool calling, prompt layers, summarization, `/summarize` & `/reply`.
-  - `docs/phase/phase-5-approval-system.md` — **[COMPLETED]** Draft state machine, approval invalidation, Discord interactive buttons & edit modal.
-  - `docs/phase/phase-6-vgen-send.md` — **[NEXT UP]** VGen sending automation, 7-point safety gate, post-send verification, audit logs.
+  - `docs/phase/phase-5-approval-system.md` — **[COMPLETED]** Draft state machine, approval invalidation on content edits, Discord interactive buttons & edit modal, contentHash tracking.
+  - `docs/phase/phase-6-vgen-send.md` — **[IN PROGRESS / READY FOR CALIBRATION]** VGen sending automation, 7-point safety gate, post-send verification, ambiguous recovery, audit logs.
   - `docs/phase/phase-7-dashboard.md` — SvelteKit web dashboard UI for tasks, conversations, drafts, clients, logs.
   - `docs/phase/phase-8-client-memory.md` — Persistent client context (`FACT`, `PREFERENCE`, `INFERENCE`).
 
