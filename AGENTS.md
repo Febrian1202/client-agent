@@ -25,7 +25,7 @@ This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions
 - **Phase 3 (VGen Reader):** COMPLETED (Playwright session reuse, PlatformAdapter, VGen reader, `/read` command).
 - **Phase 4 (AI Agent):** COMPLETED (OpenAI-compatible / 9router provider abstraction, agent_runs logging, tool registry, anti-slop prompt architecture, `/summarize` & `/reply` commands).
 - **Phase 5 (Approval System):** COMPLETED (Draft state machine, approval invalidation on content edits, REST API `/api/v1/drafts`, Discord interactive buttons & edit modal, approvals table & SHA-256 contentHash tracking, immutable audit logs).
-- **Phase 6 (VGen Send):** IN PROGRESS / READY FOR CALIBRATION (7-point safety gate, browser send automation & ambiguous recovery, SEND_VGEN_MESSAGE worker handler, REST API POST /drafts/:id/send, E2E test suite; next: Discord approve auto-dispatch & live VGen DOM selector calibration).
+- **Phase 6 (VGen Send):** COMPLETED (7-point safety gate, browser send automation & ambiguous recovery, SEND_VGEN_MESSAGE worker handler, REST API POST /drafts/:id/send, Discord approve auto-dispatch, live profile extraction & thread drawer opening, E2E test suite).
 - **Phase 7 – 8:** Upcoming: Phase 7 (Web Dashboard), Phase 8 (Client Memory).
 
 ---

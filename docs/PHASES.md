@@ -182,20 +182,20 @@ working system that does something useful.
 
 ---
 
-## Phase 6 — VGen Send (Next Up)
+## Phase 6 — VGen Send (Completed)
 
 > **Detailed Guide:** See [docs/phase/phase-6-vgen-send.md](phase/phase-6-vgen-send.md)
 
 **Goal:** Send approved messages through VGen.
 
 ```
-[ ] SEND_VGEN_MESSAGE task handler
-[ ] Safety gate (7 pre-send checks)
-[ ] Send verification (check message appeared)
-[ ] Ambiguous failure handling (no blind retry)
-[ ] Outbound message recording
-[ ] Audit log for send actions
-[ ] Discord confirmation after send
+[x] SEND_VGEN_MESSAGE task handler
+[x] Safety gate (7 pre-send checks)
+[x] Send verification (check message appeared)
+[x] Ambiguous failure handling (no blind retry)
+[x] Outbound message recording
+[x] Audit log for send actions
+[x] Discord confirmation after send
 ```
 
 **Done when:**
@@ -208,7 +208,7 @@ working system that does something useful.
 
 ---
 
-## Phase 7 — SvelteKit Dashboard
+## Phase 7 — SvelteKit Dashboard (Next Up)
 
 > **Detailed Guide:** See [docs/phase/phase-7-dashboard.md](phase/phase-7-dashboard.md)
 
