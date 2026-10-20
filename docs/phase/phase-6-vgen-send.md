@@ -57,7 +57,7 @@ Post-Send Verification:
 ## Atomic Task Breakdown
 
 ### Task 6.1: Database Schema for `audit_logs`
-- [ ] In `packages/db/src/schema/audit_logs.ts`, define `audit_logs` table:
+- [x] In `packages/db/src/schema/audit_logs.ts`, define `audit_logs` table:
   - `id`: `bigserial` primary key
   - `user_id`: `bigint` references `users(id)` nullable
   - `actor_type`: `text` not null (`user`, `agent`, `system`)
@@ -68,12 +68,12 @@ Post-Send Verification:
   - `metadata`: `jsonb` default `{}`
   - `ip_address`: `text` nullable
   - `created_at`: `timestamp with time zone` default `now()` **(Immutable — NO updated_at column)**
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 6.2: Implement the 7-Point Safety Gate
-- [ ] In `packages/domain/src/safety/safetyGate.ts`:
+- [x] In `packages/domain/src/safety/safetyGate.ts`:
   - Provide function `verifyPreSendConditions(params: PreSendCheckParams): Promise<SafetyCheckResult>`
   - Run the 7 checks in sequence:
     1. **Target Conversation Exists:** Verify conversation ID is in the database and matches platform `vgen`.
@@ -88,7 +88,7 @@ Post-Send Verification:
 ---
 
 ### Task 6.3: VGen Browser Adapter Send & Verification in `packages/vgen`
-- [ ] In `packages/vgen/src/send.ts`:
+- [x] In `packages/vgen/src/send.ts`:
   - Implement `sendMessage({ conversationUrl, content }): Promise<{ success: boolean; messageId: string }>`:
     1. Navigate to conversation URL.
     2. Locate textarea input element (`[data-testid="message-input"]` or equivalent).
@@ -98,7 +98,7 @@ Post-Send Verification:
        - Wait for network idle and wait for new message bubble to appear in DOM.
        - Verify the text of the newest message bubble equals `content`.
        - Extract message timestamp or DOM element ID.
-- [ ] Implement Ambiguous Failure Recovery:
+- [x] Implement Ambiguous Failure Recovery:
   - If network disconnects or times out before confirmation:
     - Reload conversation page.
     - Inspect last 3 messages in DOM.
@@ -108,7 +108,7 @@ Post-Send Verification:
 ---
 
 ### Task 6.4: Worker Task Handler: `SEND_VGEN_MESSAGE`
-- [ ] In `apps/worker/src/handlers/sendVgenMessage.ts`:
+- [x] In `apps/worker/src/handlers/sendVgenMessage.ts`:
   - Input: `{ draftId: number, userId: number }`
   - Step 1: Execute `verifyPreSendConditions`. If failed:
     - Log audit entry: `MESSAGE_SEND_ABORTED_SAFETY_CHECK`.
@@ -125,7 +125,7 @@ Post-Send Verification:
 ---
 
 ### Task 6.5: Send Trigger API Endpoint in `apps/api`
-- [ ] In `apps/api/src/routes/drafts.ts`:
+- [x] In `apps/api/src/routes/drafts.ts`:
   - `POST /api/v1/drafts/:id/send`
   - Fetch draft. If `status !== 'approved'`, return HTTP 409 Conflict `{ error: { code: "NOT_APPROVED", message: "Draft must be approved before sending" } }`.
   - Create `agent_tasks` record with type `SEND_VGEN_MESSAGE`.
@@ -158,10 +158,10 @@ Post-Send Verification:
 ---
 
 ## Done When Checklist
-- [ ] `audit_logs` table is created and strictly immutable.
-- [ ] All 7 safety checks execute before any browser interaction occurs.
-- [ ] Unapproved or tampered drafts cannot be sent under any circumstances.
-- [ ] Post-send verification confirms message existence in VGen DOM before updating database records.
-- [ ] Ambiguous failures halt safely without duplicate message delivery.
-- [ ] Outbound messages and audit logs are recorded accurately.
-- [ ] Discord receives immediate delivery confirmation.
+- [x] `audit_logs` table is created and strictly immutable.
+- [x] All 7 safety checks execute before any browser interaction occurs.
+- [x] Unapproved or tampered drafts cannot be sent under any circumstances.
+- [x] Post-send verification confirms message existence in VGen DOM before updating database records.
+- [x] Ambiguous failures halt safely without duplicate message delivery.
+- [x] Outbound messages and audit logs are recorded accurately.
+- [x] Discord receives immediate delivery confirmation.
