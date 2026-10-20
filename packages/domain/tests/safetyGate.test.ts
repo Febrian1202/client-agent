@@ -212,6 +212,11 @@ describe('7-Point Safety Gate', () => {
       expect(normalizeCreatorUsername('https://www.vgen.co/r1daz_/')).toBe('r1daz_');
     });
 
+    it('extracts username from protocol-optional VGen URLs', () => {
+      expect(normalizeCreatorUsername('vgen.co/r1daz_')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('www.vgen.co/r1daz_')).toBe('r1daz_');
+    });
+
     it('handles query parameters and hash fragments', () => {
       expect(normalizeCreatorUsername('https://vgen.co/r1daz_?ref=123')).toBe('r1daz_');
       expect(normalizeCreatorUsername('https://vgen.co/r1daz_#portfolio')).toBe('r1daz_');

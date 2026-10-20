@@ -99,6 +99,10 @@ export class VGenBrowserAdapter implements PlatformAdapter {
         throw new Error('Either conversationUrl or clientUsername must be provided to sendMessage');
       }
 
+      if (!isDirectThreadUrl && !input.clientUsername) {
+        throw new Error('Cannot send message to non-thread URL without clientUsername to open chat drawer');
+      }
+
       return await sendMessageOnPage(page, {
         conversationUrl: targetUrl,
         content: input.content,

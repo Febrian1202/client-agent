@@ -320,6 +320,31 @@ describe('VGen Send Message Automation', () => {
       ).rejects.toThrow('Either conversationUrl or clientUsername must be provided');
     });
 
+    it('sendMessage throws Error when non-thread URL is provided without clientUsername', async () => {
+      const mockPage: any = {
+        url: () => 'https://vgen.co/creator',
+        goto: async () => {},
+        locator: () => ({
+          first: () => ({
+            isVisible: async () => true,
+          }),
+        }),
+      };
+
+      const adapter = new VGenBrowserAdapter({
+        createPage: async () => mockPage,
+        closePage: async () => {},
+      });
+
+      await expect(
+        adapter.sendMessage({
+          conversationId: 'conv-123',
+          conversationUrl: 'https://vgen.co/creator',
+          content: 'Test message',
+        }),
+      ).rejects.toThrow('Cannot send message to non-thread URL without clientUsername to open chat drawer');
+    });
+
     it('getAuthenticatedUsername extracts username from profile elements or returns null', async () => {
       const mockPage: any = {
         url: () => 'https://vgen.co/creator',

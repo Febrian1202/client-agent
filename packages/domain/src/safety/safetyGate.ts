@@ -30,7 +30,7 @@ export function normalizeCreatorUsername(username?: string | null): string {
   }
   return username
     .trim()
-    .replace(/^https?:\/\/(?:www\.)?vgen\.co\//i, '')
+    .replace(/^(?:https?:\/\/)?(?:www\.)?vgen\.co\//i, '')
     .replace(/^@/, '')
     .split(/[/?#]/)[0]!
     .toLowerCase()
