@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   computeDraftHash,
+  normalizeCreatorUsername,
   verifyPreSendConditions,
   type PreSendCheckParams,
 } from '../src';
@@ -165,6 +166,63 @@ describe('7-Point Safety Gate', () => {
       expectedCreatorUsername: 'r1daz_',
     });
     expect(result.allowed).toBe(true);
+  });
+
+  it('passes Check 3 when expectedCreatorUsername is a VGen URL', () => {
+    const result = verifyPreSendConditions({
+      ...validParams,
+      authenticatedCreatorUsername: 'r1daz_',
+      expectedCreatorUsername: 'https://vgen.co/r1daz_',
+    });
+    expect(result.allowed).toBe(true);
+  });
+
+  it('passes Check 3 when authenticatedCreatorUsername is a VGen URL with trailing slash', () => {
+    const result = verifyPreSendConditions({
+      ...validParams,
+      authenticatedCreatorUsername: 'http://vgen.co/r1daz_/',
+      expectedCreatorUsername: '@r1daz_',
+    });
+    expect(result.allowed).toBe(true);
+  });
+
+  it('passes Check 3 with query params, www, and hash fragments', () => {
+    const result = verifyPreSendConditions({
+      ...validParams,
+      authenticatedCreatorUsername: 'https://www.vgen.co/R1Daz_?tab=commissions#about',
+      expectedCreatorUsername: 'r1daz_',
+    });
+    expect(result.allowed).toBe(true);
+  });
+
+  describe('normalizeCreatorUsername helper', () => {
+    it('normalizes plain slugs and case', () => {
+      expect(normalizeCreatorUsername('r1daz_')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('R1Daz_')).toBe('r1daz_');
+    });
+
+    it('strips leading @ symbol', () => {
+      expect(normalizeCreatorUsername('@r1daz_')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('  @R1Daz_  ')).toBe('r1daz_');
+    });
+
+    it('extracts username from https and http VGen URLs with trailing slash', () => {
+      expect(normalizeCreatorUsername('https://vgen.co/r1daz_')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('http://vgen.co/r1daz_/')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('https://www.vgen.co/r1daz_/')).toBe('r1daz_');
+    });
+
+    it('handles query parameters and hash fragments', () => {
+      expect(normalizeCreatorUsername('https://vgen.co/r1daz_?ref=123')).toBe('r1daz_');
+      expect(normalizeCreatorUsername('https://vgen.co/r1daz_#portfolio')).toBe('r1daz_');
+    });
+
+    it('returns empty string for null, undefined, or empty values', () => {
+      expect(normalizeCreatorUsername(null)).toBe('');
+      expect(normalizeCreatorUsername(undefined)).toBe('');
+      expect(normalizeCreatorUsername('')).toBe('');
+      expect(normalizeCreatorUsername('   ')).toBe('');
+    });
   });
 
   it('passes Check 5 using expectedApprovalHash override', () => {

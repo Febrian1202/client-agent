@@ -24,6 +24,19 @@ export function computeDraftHash(content: string): string {
   return createHash('sha256').update(content).digest('hex');
 }
 
+export function normalizeCreatorUsername(username?: string | null): string {
+  if (!username) {
+    return '';
+  }
+  return username
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?vgen\.co\//i, '')
+    .replace(/^@/, '')
+    .split(/[/?#]/)[0]!
+    .toLowerCase()
+    .trim();
+}
+
 export function verifyPreSendConditions(params: PreSendCheckParams): SafetyCheckResult {
   if (!params.draft) {
     return {
@@ -60,8 +73,8 @@ export function verifyPreSendConditions(params: PreSendCheckParams): SafetyCheck
   }
 
   // Check 3: Authenticated Account Match
-  const expectedUser = params.expectedCreatorUsername.toLowerCase().replace(/^@/, '');
-  const activeUser = (params.authenticatedCreatorUsername ?? '').toLowerCase().replace(/^@/, '');
+  const expectedUser = normalizeCreatorUsername(params.expectedCreatorUsername);
+  const activeUser = normalizeCreatorUsername(params.authenticatedCreatorUsername);
   if (!activeUser || activeUser !== expectedUser) {
     return {
       allowed: false,
