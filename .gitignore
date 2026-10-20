@@ -31,6 +31,8 @@ bun.lockb.bak
 
 # Operating System & IDE
 .superpowers/
+.agents/
+skills-lock.json
 .DS_Store
 Thumbs.db
 .idea/
