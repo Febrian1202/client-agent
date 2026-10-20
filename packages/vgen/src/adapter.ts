@@ -1,5 +1,6 @@
 import { type Page, errors as playwrightErrors } from 'playwright';
 import { getSharedBrowserContext, checkVGenAuthStatus } from '@client-agent/browser';
+import { normalizeCreatorUsername } from '@client-agent/domain';
 import type {
   PlatformAdapter,
   ConversationResult,
@@ -11,22 +12,30 @@ import type {
 import { SessionExpiredError, NavigationTimeoutError, NotSupportedError } from './errors';
 import { openThread, scrapeThreadMessages } from './read';
 import { extractMessages, toMessageResult } from './parse';
-import { CREATOR_PROFILE_MARKER, VGEN_DASHBOARD_URL } from './selectors';
+import {
+  CREATOR_PROFILE_MARKER,
+  NON_PROFILE_PATHS,
+  THREAD_URL_PATTERN,
+  VGEN_DASHBOARD_URL,
+} from './selectors';
 import { sendMessageOnPage } from './send';
 
 export interface VGenAdapterOptions {
   createPage?: () => Promise<Page>;
   closePage?: (page: Page) => Promise<void>;
+  openThread?: (page: Page, username: string) => Promise<{ threadId: string; url: string }>;
 }
 
 export class VGenBrowserAdapter implements PlatformAdapter {
   private readonly createPage: () => Promise<Page>;
   private readonly closePage: (page: Page) => Promise<void>;
+  private readonly openThreadFn: (page: Page, username: string) => Promise<{ threadId: string; url: string }>;
 
   constructor(options?: VGenAdapterOptions) {
     this.createPage =
       options?.createPage ?? (async () => (await getSharedBrowserContext()).newPage());
     this.closePage = options?.closePage ?? (async (page) => page.close());
+    this.openThreadFn = options?.openThread ?? openThread;
   }
 
   async getConversation({ clientUsername, limit = 20 }: GetConversationInput): Promise<ConversationResult> {
@@ -35,7 +44,7 @@ export class VGenBrowserAdapter implements PlatformAdapter {
       const authed = await checkVGenAuthStatus(page);
       if (!authed) throw new SessionExpiredError();
 
-      const { threadId, url } = await openThread(page, clientUsername);
+      const { threadId, url } = await this.openThreadFn(page, clientUsername);
       const blocks = await scrapeThreadMessages(page, limit);
 
       const messages: MessageResult[] = blocks
@@ -77,8 +86,13 @@ export class VGenBrowserAdapter implements PlatformAdapter {
       if (!authed) throw new SessionExpiredError();
 
       let targetUrl = input.conversationUrl;
-      if (!targetUrl && input.clientUsername) {
-        const thread = await openThread(page, input.clientUsername);
+      const isDirectThreadUrl = targetUrl ? THREAD_URL_PATTERN.test(targetUrl) : false;
+
+      if ((!targetUrl || !isDirectThreadUrl) && input.clientUsername) {
+        if (targetUrl && page.url() !== targetUrl) {
+          await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+        }
+        const thread = await this.openThreadFn(page, input.clientUsername);
         targetUrl = thread.url;
       }
       if (!targetUrl) {
@@ -103,24 +117,67 @@ export class VGenBrowserAdapter implements PlatformAdapter {
         await targetPage.goto(VGEN_DASHBOARD_URL, { waitUntil: 'domcontentloaded' });
       }
 
-      const profileEl = targetPage.locator(CREATOR_PROFILE_MARKER).first();
-      const visible = await profileEl.isVisible().catch(() => false);
-      if (visible) {
-        const text = (await profileEl.innerText().catch(() => ''))?.trim();
-        if (text) return text.replace(/^@/, '');
+      const locator = targetPage.locator(CREATOR_PROFILE_MARKER);
+      let elements = typeof locator.all === 'function' ? await locator.all() : [];
+      if (elements.length === 0) {
+        elements = [locator.first()];
+      }
+      const nonProfileSlugs = new Set(NON_PROFILE_PATHS.map((p) => p.toLowerCase()));
 
-        const alt = (await profileEl.getAttribute('alt').catch(() => ''))?.trim();
-        if (alt) return alt.replace(/^@/, '');
+      for (const el of elements) {
+        const visible = await el.isVisible().catch(() => false);
+        if (!visible) continue;
 
-        const dataUser = (await profileEl.getAttribute('data-username').catch(() => ''))?.trim();
-        if (dataUser) return dataUser.replace(/^@/, '');
-
-        const href = await profileEl.getAttribute('href').catch(() => null);
+        // 1. Check href for candidate profile link
+        let href = await el.getAttribute('href').catch(() => null);
+        if (!href && typeof el.locator === 'function') {
+          href = await el.locator('xpath=ancestor-or-self::a').first().getAttribute('href').catch(() => null);
+        }
         if (href) {
-          const match = href.match(/\/creator\/([A-Za-z0-9_-]+)/);
-          if (match?.[1]) return match[1];
+          let pathname = href;
+          try {
+            pathname = new URL(href, 'https://vgen.co').pathname;
+          } catch {
+            pathname = href.replace(/^https?:\/\/(?:www\.)?vgen\.co/i, '');
+          }
+          const segments = pathname.replace(/^\/+|\/+$/g, '').split('/');
+          const firstSegment = segments[0];
+          if (firstSegment && !nonProfileSlugs.has(firstSegment.toLowerCase())) {
+            const normalized = normalizeCreatorUsername(firstSegment);
+            if (normalized && !nonProfileSlugs.has(normalized) && /^[a-z0-9_-]+$/i.test(normalized)) {
+              return normalized;
+            }
+          }
+        }
+
+        // 2. Check data-username attribute
+        const dataUser = (await el.getAttribute('data-username').catch(() => ''))?.trim();
+        if (dataUser) {
+          const normalized = normalizeCreatorUsername(dataUser);
+          if (normalized && !nonProfileSlugs.has(normalized) && /^[a-z0-9_-]+$/i.test(normalized)) {
+            return normalized;
+          }
+        }
+
+        // 3. Check alt attribute (e.g. avatar image)
+        const alt = (await el.getAttribute('alt').catch(() => ''))?.trim();
+        if (alt) {
+          const normalized = normalizeCreatorUsername(alt);
+          if (normalized && !nonProfileSlugs.has(normalized) && /^[a-z0-9_-]+$/i.test(normalized)) {
+            return normalized;
+          }
+        }
+
+        // 4. Check innerText (only if it looks like a valid username slug)
+        const text = (await el.innerText().catch(() => ''))?.trim();
+        if (text) {
+          const normalized = normalizeCreatorUsername(text);
+          if (normalized && !nonProfileSlugs.has(normalized) && /^[a-z0-9_-]+$/i.test(normalized)) {
+            return normalized;
+          }
         }
       }
+
       return null;
     } finally {
       if (shouldClose) {

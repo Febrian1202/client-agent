@@ -371,6 +371,89 @@ describe('VGen Send Message Automation', () => {
       expect(navigatedTo).toBe('https://vgen.co/creator');
       expect(pageClosed).toBe(true);
     });
+
+    it('getAuthenticatedUsername extracts username from profile link even when invite-codes link is present', async () => {
+      const inviteCodesEl = {
+        isVisible: async () => true,
+        getAttribute: async (attr: string) => (attr === 'href' ? 'https://vgen.co/creator/invite-codes' : null),
+        innerText: async () => 'Invite codes',
+      };
+      const profileLinkEl = {
+        isVisible: async () => true,
+        getAttribute: async (attr: string) => {
+          if (attr === 'href') return 'https://vgen.co/r1daz_';
+          if (attr === 'class') return 'buttonLink profileLinkButton';
+          if (attr === 'target') return '_blank';
+          return null;
+        },
+        innerText: async () => 'Go to my profile',
+      };
+
+      const mockPage: any = {
+        url: () => 'https://vgen.co/creator',
+        goto: async () => {},
+        locator: (selector: string) => ({
+          all: async () => [inviteCodesEl, profileLinkEl],
+          first: () => inviteCodesEl,
+        }),
+      };
+
+      const adapter = new VGenBrowserAdapter({
+        createPage: async () => mockPage,
+        closePage: async () => {},
+      });
+
+      const username = await adapter.getAuthenticatedUsername(mockPage);
+      expect(username).toBe('r1daz_');
+    });
+
+    it('sendMessage calls openThread when conversationUrl is a non-thread URL like /creator/commissions', async () => {
+      let openThreadCalled = false;
+      const mockPage: any = {
+        url: () => 'https://vgen.co/creator/commissions',
+        goto: async () => {},
+        waitForLoadState: async () => {},
+        locator: (selector: string) => ({
+          first: () => ({
+            waitFor: async () => {},
+            fill: async () => {},
+            click: async () => {},
+            isVisible: async () => true,
+            innerText: async () => 'Hello commission client!',
+            getAttribute: async () => 'msg-comm-1',
+          }),
+          last: () => ({
+            waitFor: async () => {},
+            innerText: async () => 'Hello commission client!',
+            getAttribute: async (attr: string) => (attr === 'data-message-id' ? 'msg-comm-1' : null),
+          }),
+          all: async () => [],
+        }),
+        waitForTimeout: async () => {},
+      };
+
+      const adapter = new VGenBrowserAdapter({
+        createPage: async () => mockPage,
+        closePage: async () => {},
+        openThread: async (_page: any, username: string) => {
+          openThreadCalled = true;
+          return {
+            threadId: 'thread-comm-123',
+            url: 'https://vgen.co/inbox/thread-comm-123',
+          };
+        },
+      } as any);
+
+      const res = await adapter.sendMessage({
+        conversationId: 'conv-123',
+        conversationUrl: 'https://vgen.co/creator/commissions',
+        clientUsername: 'client_abc',
+        content: 'Hello commission client!',
+      });
+
+      expect(openThreadCalled).toBe(true);
+      expect(res.success).toBe(true);
+    });
   });
 
   it('throws error when message content is empty', async () => {
