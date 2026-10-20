@@ -51,6 +51,7 @@ export function createDefaultDraftInteractionDeps(
       if (!draft) return;
       const idempotencyKey = `send_draft_${draft.id}_${new Date(draft.updatedAt).getTime()}`;
       let task = await findTaskByIdempotencyKey(idempotencyKey);
+      const isNew = !task;
       if (!task) {
         task = await createTask({
           userId: resolvedUserId,
@@ -59,12 +60,14 @@ export function createDefaultDraftInteractionDeps(
           idempotencyKey,
         });
       }
-      const publisher = options?.publisher ?? publishTask;
-      await publisher(STREAMS.SEND, {
-        taskId: String(task.id),
-        draftId: String(draft.id),
-        userId: String(resolvedUserId),
-      });
+      if (isNew) {
+        const publisher = options?.publisher ?? publishTask;
+        await publisher(STREAMS.SEND, {
+          taskId: String(task.id),
+          draftId: String(draft.id),
+          userId: String(resolvedUserId),
+        });
+      }
       return { taskId: task.id };
     },
     rejectDraft: async ({ draftId, userId, reason }) => {

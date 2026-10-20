@@ -132,9 +132,11 @@ describe('Generate Reply Draft Worker Integration', () => {
     // 4. Test button approval interaction through bot routing
     let publishedStream: any = null;
     let publishedPayload: any = null;
+    let publishCallCount = 0;
     const mockPublisher = async (stream: string, payload: Record<string, unknown>) => {
       publishedStream = stream;
       publishedPayload = payload;
+      publishCallCount++;
       return 'mock-msg-id';
     };
 
@@ -174,9 +176,14 @@ describe('Generate Reply Draft Worker Integration', () => {
     expect(publishedStream).toBe(STREAMS.SEND);
     expect(publishedPayload).toBeDefined();
     expect(publishedPayload?.draftId).toBe(String(draft.id));
+    expect(publishCallCount).toBe(1);
     if (publishedPayload?.taskId) {
       createdTaskIds.push(Number(publishedPayload.taskId));
     }
+
+    // Calling sendDraft a second time for the same draft must be idempotent and not re-publish
+    await draftDeps.sendDraft!({ draftId: draft.id, userId: 'discord-user-1' });
+    expect(publishCallCount).toBe(1);
 
     // 5. Test modal edit interaction through bot routing (should revert to pending_approval)
     let modalUpdatedMessage: any = null;
