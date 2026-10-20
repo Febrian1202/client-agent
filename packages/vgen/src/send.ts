@@ -35,7 +35,13 @@ export async function sendMessageOnPage(
 
     const input = page.locator(MESSAGE_INPUT_SELECTOR).first();
     await input.waitFor({ timeout: 10_000 });
-    await input.fill(options.content);
+    await input.focus?.().catch(() => {});
+
+    if (typeof input.pressSequentially === 'function') {
+      await input.pressSequentially(options.content, { delay: 15 });
+    } else {
+      await input.fill(options.content);
+    }
 
     const sendBtn = page.locator(SEND_BUTTON_SELECTOR).first();
     if (await sendBtn.isVisible().catch(() => false)) {
