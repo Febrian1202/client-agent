@@ -72,6 +72,21 @@ describe('Agent Task Monitor (/agent)', () => {
       expect(content).toContain('Failed / Dead');
     });
 
+    it('preserves allTasks master state and includes dead tasks in failed filter', () => {
+      const content = readFileSync(pagePath, 'utf8');
+
+      // Uses allTasks master state
+      expect(content).toContain('allTasks');
+      // failed filter includes both failed and dead tasks
+      expect(content).toContain("t.status === 'failed' || t.status === 'dead'");
+      // metricStats derives from allTasks
+      expect(content).toContain('allTasks.length');
+      // table rows are clickable and have cursor-pointer
+      expect(content).toContain('cursor-pointer');
+      expect(content).toContain('inspectTask(task)');
+      expect(content).toContain('stopPropagation');
+    });
+
     it('updates task query when changing status filter', async () => {
       let requestedUrl = '';
       const mockFetch = async (url: string | URL | Request) => {

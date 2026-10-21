@@ -31,15 +31,14 @@
 	interface FilterTab {
 		id: TaskFilter;
 		label: string;
-		statusParam?: string;
 	}
 
 	const filterTabs: FilterTab[] = [
 		{ id: 'all', label: 'All' },
-		{ id: 'running', label: 'Running', statusParam: 'running' },
-		{ id: 'queued', label: 'Queued', statusParam: 'queued' },
-		{ id: 'completed', label: 'Completed', statusParam: 'completed' },
-		{ id: 'failed', label: 'Failed / Dead', statusParam: 'failed' }
+		{ id: 'running', label: 'Running' },
+		{ id: 'queued', label: 'Queued' },
+		{ id: 'completed', label: 'Completed' },
+		{ id: 'failed', label: 'Failed / Dead' }
 	];
 
 	// Sample tasks for fallback preview when backend is unreachable
@@ -154,7 +153,7 @@
 	];
 
 	// Component State with Svelte 5 Runes
-	let tasks = $state<TaskItem[]>([]);
+	let allTasks = $state<TaskItem[]>([]);
 	let isLoading = $state(true);
 	let isRefreshing = $state(false);
 	let activeFilter = $state<TaskFilter>('all');
@@ -177,74 +176,63 @@
 		}, 4000);
 	}
 
-	async function loadTasks(filterId: TaskFilter = activeFilter) {
-		const tab = filterTabs.find((t) => t.id === filterId);
-		const params: TaskListParams = {
-			limit: 50
-		};
-		if (tab?.statusParam) {
-			params.status = tab.statusParam;
-		}
-
+	async function loadTasks() {
 		try {
-			const res = await api.listTasks(params);
+			const res = await api.listTasks({ limit: 100 });
 			if (res && Array.isArray(res.tasks)) {
-				tasks = res.tasks;
+				allTasks = res.tasks;
 			} else {
-				tasks = DEFAULT_SAMPLE_TASKS;
+				allTasks = DEFAULT_SAMPLE_TASKS;
 			}
 		} catch {
 			// Gracefully fallback to sample tasks for resilient preview
-			tasks = DEFAULT_SAMPLE_TASKS;
+			allTasks = DEFAULT_SAMPLE_TASKS;
 		}
 	}
 
 	onMount(async () => {
 		isLoading = true;
-		await loadTasks('all');
+		await loadTasks();
 		isLoading = false;
 	});
 
-	async function handleFilterChange(filterId: TaskFilter) {
+	function handleFilterChange(filterId: TaskFilter) {
 		activeFilter = filterId;
-		isRefreshing = true;
-		await loadTasks(filterId);
-		isRefreshing = false;
 	}
 
 	async function handleRefresh() {
 		isRefreshing = true;
-		await loadTasks(activeFilter);
+		await loadTasks();
 		showToast('Task list refreshed', 'info');
 		isRefreshing = false;
 	}
 
-	// Filtered tasks on client side for responsive instant filtering
+	// Filtered tasks on client side from allTasks based on activeFilter
 	const displayedTasks = $derived.by(() => {
 		if (activeFilter === 'all') {
-			return tasks;
+			return allTasks;
 		}
 		if (activeFilter === 'failed') {
-			return tasks.filter((t) => t.status === 'failed' || t.status === 'dead');
+			return allTasks.filter((t) => t.status === 'failed' || t.status === 'dead');
 		}
-		return tasks.filter((t) => t.status === activeFilter);
+		return allTasks.filter((t) => t.status === activeFilter);
 	});
 
-	// Quick summary metrics
+	// Quick summary metrics derived from allTasks (never collapsed by filter tabs)
 	const metricStats = $derived.by(() => {
-		const total = tasks.length;
-		const running = tasks.filter((t) => t.status === 'running').length;
-		const queued = tasks.filter((t) => t.status === 'queued').length;
-		const failed = tasks.filter((t) => t.status === 'failed' || t.status === 'dead').length;
-		const completed = tasks.filter((t) => t.status === 'completed').length;
+		const total = allTasks.length;
+		const running = allTasks.filter((t) => t.status === 'running').length;
+		const queued = allTasks.filter((t) => t.status === 'queued').length;
+		const failed = allTasks.filter((t) => t.status === 'failed' || t.status === 'dead').length;
+		const completed = allTasks.filter((t) => t.status === 'completed').length;
 		return { total, running, queued, failed, completed };
 	});
 
-	// Compute counts per filter pill
+	// Compute counts per filter pill from allTasks
 	function getFilterCount(filterId: TaskFilter): number {
-		if (filterId === 'all') return tasks.length;
-		if (filterId === 'failed') return tasks.filter((t) => t.status === 'failed' || t.status === 'dead').length;
-		return tasks.filter((t) => t.status === filterId).length;
+		if (filterId === 'all') return allTasks.length;
+		if (filterId === 'failed') return allTasks.filter((t) => t.status === 'failed' || t.status === 'dead').length;
+		return allTasks.filter((t) => t.status === filterId).length;
 	}
 
 	// Open inspect drawer for a task
@@ -274,8 +262,8 @@
 			const res = await api.retryTask(taskId);
 			showToast(`Task #${taskId} re-queued successfully`, 'success');
 
-			// Update task in local state
-			tasks = tasks.map((t) => (t.id === Number(taskId) ? res.task : t));
+			// Update task in local master state
+			allTasks = allTasks.map((t) => (t.id === Number(taskId) ? res.task : t));
 
 			// If the selected task is the one retried, update its detail view
 			if (selectedTask && selectedTask.id === Number(taskId)) {
@@ -599,7 +587,16 @@
 						{#each displayedTasks as task (task.id)}
 							{@const statusCfg = getStatusConfig(task.status)}
 							{@const typeCfg = getTypeConfig(task.type)}
-							<tr class="hover:bg-[#f4faff]/60 transition-colors">
+							<tr
+								onclick={() => inspectTask(task)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										inspectTask(task);
+									}
+								}}
+								tabindex="0"
+								class="hover:bg-[#f4faff] transition-colors cursor-pointer focus:outline-none focus:bg-[#f4faff]"
+							>
 								<!-- Task ID -->
 								<td class="py-3 px-4 font-mono font-bold text-[#3c3c3c]">
 									#{task.id}
@@ -653,7 +650,10 @@
 										<!-- Inspect Button -->
 										<button
 											type="button"
-											onclick={() => inspectTask(task)}
+											onclick={(e) => {
+												e.stopPropagation();
+												inspectTask(task);
+											}}
 											title="Inspect Task Details"
 											aria-label={`Inspect Task #${task.id}`}
 											class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border-2 border-[#c7e8fa] hover:bg-[#f4faff] hover:border-[#1cb0f6] text-[#3c3c3c] font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1cb0f6]"
@@ -666,7 +666,10 @@
 										{#if task.status === 'failed' || task.status === 'dead'}
 											<button
 												type="button"
-												onclick={() => handleRetry(task.id)}
+												onclick={(e) => {
+													e.stopPropagation();
+													handleRetry(task.id);
+												}}
 												disabled={isRetrying}
 												title="Retry Task"
 												aria-label={`Retry Task #${task.id}`}
