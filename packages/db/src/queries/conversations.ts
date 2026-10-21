@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { clients, conversations, type ConversationRow } from '../schema';
 
@@ -88,4 +88,74 @@ export async function getConversationWithClient(id: number): Promise<Conversatio
     clientId: row.clientId,
     clientUsername: row.clientUsername,
   };
+}
+
+export interface ListConversationsFilter {
+  platform?: string;
+  clientId?: number;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ConversationWithClientListItem extends ConversationRow {
+  clientUsername?: string;
+  clientDisplayName?: string | null;
+  clientAvatarUrl?: string | null;
+  client?: {
+    id: number;
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  };
+}
+
+export async function listConversations(filter?: ListConversationsFilter): Promise<ConversationWithClientListItem[]> {
+  const conditions = [];
+  if (filter?.platform) {
+    conditions.push(eq(conversations.platform, filter.platform));
+  }
+  if (filter?.clientId) {
+    conditions.push(eq(conversations.clientId, filter.clientId));
+  }
+  if (filter?.status) {
+    conditions.push(eq(conversations.status, filter.status));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  let query = db
+    .select({
+      conversation: conversations,
+      clientUsername: clients.username,
+      clientDisplayName: clients.displayName,
+      clientAvatarUrl: clients.avatarUrl,
+    })
+    .from(conversations)
+    .innerJoin(clients, eq(conversations.clientId, clients.id))
+    .orderBy(desc(conversations.updatedAt));
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+  if (filter?.limit !== undefined) {
+    query = query.limit(filter.limit) as typeof query;
+  }
+  if (filter?.offset !== undefined) {
+    query = query.offset(filter.offset) as typeof query;
+  }
+
+  const rows = await query;
+  return rows.map((r) => ({
+    ...r.conversation,
+    clientUsername: r.clientUsername,
+    clientDisplayName: r.clientDisplayName,
+    clientAvatarUrl: r.clientAvatarUrl,
+    client: {
+      id: r.conversation.clientId,
+      username: r.clientUsername,
+      displayName: r.clientDisplayName,
+      avatarUrl: r.clientAvatarUrl,
+    },
+  }));
 }

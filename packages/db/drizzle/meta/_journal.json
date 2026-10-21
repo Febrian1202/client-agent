@@ -50,6 +50,13 @@
       "when": 1792424953000,
       "tag": "0006_add_approval_content_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792586192690,
+      "tag": "0007_calm_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }
