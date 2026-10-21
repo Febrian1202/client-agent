@@ -50,7 +50,7 @@ export async function listAuditLogs(filter?: ListAuditLogsFilter): Promise<Audit
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  let query = db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt));
+  let query = db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt), desc(auditLogs.id));
 
   if (whereClause) {
     query = query.where(whereClause) as typeof query;

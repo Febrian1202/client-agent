@@ -133,6 +133,21 @@ describe('Dashboard Database Queries', () => {
     expect(patched?.id).toBe(comm1.id);
     expect(patched?.status).toBe(CommissionStatus.COMPLETED);
 
+    // 4b. Upsert with omitted status and metadata preserves existing values
+    const commPreserved = await upsertCommission({
+      clientId: clientIdA,
+      externalId: extId,
+      serviceName: 'Character Illustration (Preserved Fields)',
+      amount: '350.00',
+    });
+    expect(commPreserved.id).toBe(comm1.id);
+    expect(commPreserved.serviceName).toBe('Character Illustration (Preserved Fields)');
+    expect(commPreserved.amount).toBe('350.00');
+    // status should still be COMPLETED from step 4, not reverted to REQUESTED
+    expect(commPreserved.status).toBe(CommissionStatus.COMPLETED);
+    // metadata should still have notes from step 1, not overwritten with {}
+    expect((commPreserved.metadata as Record<string, unknown>)?.notes).toBe('Half body with full coloring');
+
     // 5. Insert a second commission for client B
     const comm2 = await upsertCommission({
       clientId: clientIdB,

@@ -55,13 +55,36 @@ export async function updateCommission(
 
 export async function upsertCommission(input: UpsertCommissionInput): Promise<CommissionRow> {
   if (input.id) {
-    const updated = await updateCommission(input.id, input);
+    const updateData: Partial<InsertCommissionRow> = {};
+    if (input.clientId !== undefined) updateData.clientId = input.clientId;
+    if (input.externalId !== undefined) updateData.externalId = input.externalId;
+    if (input.serviceName !== undefined) updateData.serviceName = input.serviceName;
+    if (input.amount !== undefined) updateData.amount = input.amount;
+    if (input.currency !== undefined) updateData.currency = input.currency;
+    if (input.estimatedStart !== undefined) updateData.estimatedStart = input.estimatedStart;
+    if (input.guaranteedDelivery !== undefined) updateData.guaranteedDelivery = input.guaranteedDelivery;
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.metadata !== undefined) updateData.metadata = input.metadata;
+
+    const updated = await updateCommission(input.id, updateData);
     if (updated) {
       return updated;
     }
   }
 
   if (input.externalId) {
+    const conflictUpdateSet: Partial<InsertCommissionRow> & { updatedAt: ReturnType<typeof sql> } = {
+      updatedAt: sql`now()`,
+    };
+    if (input.clientId !== undefined) conflictUpdateSet.clientId = input.clientId;
+    if (input.serviceName !== undefined) conflictUpdateSet.serviceName = input.serviceName;
+    if (input.amount !== undefined) conflictUpdateSet.amount = input.amount;
+    if (input.currency !== undefined) conflictUpdateSet.currency = input.currency;
+    if (input.estimatedStart !== undefined) conflictUpdateSet.estimatedStart = input.estimatedStart;
+    if (input.guaranteedDelivery !== undefined) conflictUpdateSet.guaranteedDelivery = input.guaranteedDelivery;
+    if (input.status !== undefined) conflictUpdateSet.status = input.status;
+    if (input.metadata !== undefined) conflictUpdateSet.metadata = input.metadata;
+
     const rows = await db
       .insert(commissions)
       .values({
@@ -77,17 +100,7 @@ export async function upsertCommission(input: UpsertCommissionInput): Promise<Co
       })
       .onConflictDoUpdate({
         target: commissions.externalId,
-        set: {
-          clientId: input.clientId,
-          serviceName: input.serviceName,
-          amount: input.amount,
-          currency: input.currency ?? 'USD',
-          estimatedStart: input.estimatedStart ?? null,
-          guaranteedDelivery: input.guaranteedDelivery ?? null,
-          status: input.status ?? CommissionStatus.REQUESTED,
-          metadata: input.metadata ?? {},
-          updatedAt: sql`now()`,
-        },
+        set: conflictUpdateSet,
       })
       .returning();
     return rows[0]!;
