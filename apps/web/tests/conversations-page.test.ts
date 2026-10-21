@@ -58,6 +58,28 @@ describe('Conversation & Message Viewer (/conversations)', () => {
       expect(content).toContain('target="_blank"');
     });
 
+    it('guards against asynchronous race condition on rapid conversation selection', () => {
+      const content = readFileSync(pagePath, 'utf8');
+
+      // Verifies conversation ID guard in loadMessages before setting messages state
+      expect(content).toContain('selectedConversation?.id !== conversationId');
+    });
+
+    it('guards sync refresh callback with target conversation ID and removes unused icon imports', () => {
+      const content = readFileSync(pagePath, 'utf8');
+
+      // Verifies sync target conversation guard before reloading messages
+      expect(content).toContain('const syncTargetId = selectedConversation.id;');
+      expect(content).toContain('selectedConversation?.id === syncTargetId');
+
+      // Unused Lucide icons should be removed from imports
+      const scriptMatch = content.match(/<script[\s\S]*?<\/script>/)?.[0] || '';
+      expect(scriptMatch).not.toContain('Send,');
+      expect(scriptMatch).not.toContain('User,');
+      expect(scriptMatch).not.toContain('Bot,');
+      expect(scriptMatch).not.toContain('ArrowLeft');
+    });
+
     it('renders [Sync from VGen] button invoking api.syncConversation', () => {
       const content = readFileSync(pagePath, 'utf8');
 

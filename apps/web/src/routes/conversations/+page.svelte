@@ -8,17 +8,13 @@
 	import {
 		MessageSquare,
 		RefreshCw,
-		Send,
 		ExternalLink,
 		Search,
 		Sparkles,
 		CheckCircle2,
 		AlertCircle,
 		X,
-		User,
-		Bot,
-		Clock,
-		ArrowLeft
+		Clock
 	} from 'lucide-svelte';
 
 	// Default fallback sample conversations for robust preview
@@ -276,6 +272,8 @@
 		isLoadingMessages = true;
 		try {
 			const res = await api.getConversationMessages(conversationId);
+			if (selectedConversation?.id !== conversationId) return;
+
 			if (res && res.length > 0) {
 				// Sort chronologically ascending
 				messages = [...res].sort(
@@ -285,10 +283,13 @@
 				messages = DEFAULT_SAMPLE_MESSAGES_MAP[conversationId] || [];
 			}
 		} catch {
+			if (selectedConversation?.id !== conversationId) return;
 			messages = DEFAULT_SAMPLE_MESSAGES_MAP[conversationId] || [];
 		} finally {
-			isLoadingMessages = false;
-			await scrollToBottom();
+			if (selectedConversation?.id === conversationId) {
+				isLoadingMessages = false;
+				await scrollToBottom();
+			}
 		}
 	}
 
@@ -323,15 +324,16 @@
 	// Trigger VGen Sync
 	async function handleSyncConversation() {
 		if (!selectedConversation) return;
+		const syncTargetId = selectedConversation.id;
 		isSyncing = true;
 		try {
-			await api.syncConversation(selectedConversation.id);
+			await api.syncConversation(syncTargetId);
 			showToast(`Sync queued for @${selectedConversation.clientUsername}`, 'success');
 
-			// Refresh messages after brief interval
+			// Refresh messages after brief interval with conversation guard
 			setTimeout(async () => {
-				if (selectedConversation) {
-					await loadMessages(selectedConversation.id);
+				if (selectedConversation?.id === syncTargetId) {
+					await loadMessages(syncTargetId);
 				}
 				isSyncing = false;
 			}, 1200);
