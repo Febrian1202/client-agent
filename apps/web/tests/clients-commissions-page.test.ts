@@ -75,6 +75,11 @@ describe('Clients & Commission Tracker (/clients, /clients/[id], /commissions)',
       expect(content).toContain('loadClients');
       expect(content).toContain('RefreshCw');
     });
+
+    it('strips leading @ symbol when searching by username', () => {
+      const content = readFileSync(clientsPagePath, 'utf8');
+      expect(content).toContain("replace(/^@/, '')");
+    });
   });
 
   describe('Step 3: Client Detail Profile (/clients/[id])', () => {
@@ -110,6 +115,15 @@ describe('Clients & Commission Tracker (/clients, /clients/[id], /commissions)',
       const content = readFileSync(clientDetailPagePath, 'utf8');
       expect(content).toContain('/conversations');
       expect(content).toContain('/clients');
+    });
+
+    it('uses $effect to reactively reload when route param changes and handles client not found cleanly', () => {
+      const content = readFileSync(clientDetailPagePath, 'utf8');
+      expect(content).toContain('$effect');
+      expect(content).toContain('clientId');
+      expect(content).toContain('loadClientData()');
+      expect(content).toContain('Client not found');
+      expect(content).not.toContain('fallback || DEFAULT_SAMPLE_CLIENTS[0]');
     });
   });
 

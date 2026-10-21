@@ -21,10 +21,11 @@
 
 	async function loadClients() {
 		try {
-			const res = await api.listClients({ search: searchQuery.trim() || undefined });
+			const cleanQuery = searchQuery.trim().replace(/^@/, '');
+			const res = await api.listClients({ search: cleanQuery || undefined });
 			if (res && res.length > 0) {
 				clients = res;
-			} else if (!searchQuery.trim()) {
+			} else if (!cleanQuery) {
 				clients = DEFAULT_SAMPLE_CLIENTS;
 			} else {
 				clients = [];
@@ -49,8 +50,8 @@
 	const filteredClients = $derived(
 		clients.filter((client) => {
 			if (!searchQuery.trim()) return true;
-			const q = searchQuery.toLowerCase().trim();
-			const u = (client.username || '').toLowerCase();
+			const q = searchQuery.trim().toLowerCase().replace(/^@/, '');
+			const u = (client.username || '').toLowerCase().replace(/^@/, '');
 			const d = (client.displayName || '').toLowerCase();
 			const p = (client.platform || '').toLowerCase();
 			return u.includes(q) || d.includes(q) || p.includes(q);

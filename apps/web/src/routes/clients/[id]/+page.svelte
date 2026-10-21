@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api, type ClientItem, type CommissionItem } from '$lib/api';
 	import {
@@ -44,10 +43,16 @@
 			try {
 				const clientRes = await api.getClient(clientId);
 				client = clientRes;
-			} catch {
-				// Fallback to sample data for preview or offline dev
+			} catch (err: any) {
+				// Fallback to sample data for preview or offline dev if client ID matches sample
 				const fallback = DEFAULT_SAMPLE_CLIENTS.find((c) => c.id === clientId);
-				client = fallback || DEFAULT_SAMPLE_CLIENTS[0];
+				if (fallback) {
+					client = fallback;
+				} else {
+					client = null;
+					errorMessage = err.message || 'Client not found';
+					return;
+				}
 			}
 
 			// Fetch commissions for this client
@@ -76,8 +81,10 @@
 		}
 	}
 
-	onMount(() => {
-		loadClientData();
+	$effect(() => {
+		if (clientId) {
+			loadClientData();
+		}
 	});
 
 	const memoryProfile = $derived(getClientMemoryProfile(client?.username));
