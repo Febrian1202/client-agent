@@ -73,7 +73,7 @@ export async function upsertCommission(input: UpsertCommissionInput): Promise<Co
   }
 
   if (input.externalId) {
-    const conflictUpdateSet: Partial<InsertCommissionRow> & { updatedAt: ReturnType<typeof sql> } = {
+    const conflictUpdateSet: Omit<Partial<InsertCommissionRow>, 'updatedAt'> & { updatedAt: ReturnType<typeof sql> } = {
       updatedAt: sql`now()`,
     };
     if (input.clientId !== undefined) conflictUpdateSet.clientId = input.clientId;
