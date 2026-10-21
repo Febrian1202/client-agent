@@ -141,6 +141,37 @@ describe('Dashboard Overview Data Mapping & Logic', () => {
     expect(cards[3].badgeColor).toContain('#af71f5');
   });
 
+  it('preserves legitimate empty state metrics (0 counts and $0 USD)', () => {
+    const emptySummary: DashboardSummary = {
+      metrics: {
+        activeCount: 0,
+        inQueueCount: 0,
+        completedMonthCount: 0,
+        pendingDraftCount: 0,
+      },
+      commissions: [],
+      activeCommissions: [],
+      recentMessages: [],
+      pendingDrafts: [],
+    };
+
+    const cards = computeMetricCards(emptySummary);
+    expect(cards[0].value).toBe('0 Active');
+    expect(cards[0].subtitle).toBe('$0 USD in pipeline');
+    expect(cards[1].value).toBe('0 In Queue');
+    expect(cards[2].value).toBe('0 Finished');
+    expect(cards[3].value).toBe('0 Drafts');
+  });
+
+  it('falls back to default sample metrics only when summary is null/undefined', () => {
+    const fallbackCards = computeMetricCards(null);
+    expect(fallbackCards[0].value).toBe('5 Active');
+    expect(fallbackCards[0].subtitle).toBe('$1,850 USD in pipeline');
+    expect(fallbackCards[1].value).toBe('3 In Queue');
+    expect(fallbackCards[2].value).toBe('18 Finished');
+    expect(fallbackCards[3].value).toBe('3 Drafts');
+  });
+
   it('filters commissions correctly by tab (All, Active, In Queue, Delivered)', () => {
     const allComms = mockSummary.commissions;
 
@@ -244,6 +275,14 @@ describe('Dashboard Overview Data Mapping & Logic', () => {
     expect(content).toContain('SHA-256 Verified');
     expect(content).toContain('Grounded: Timezone UTC+9');
     expect(content).toContain('Approve and Dispatch');
+
+    // Persistence & Real Draft Check
+    expect(content).toContain('isRealDraft');
+    expect(content).toContain('updateDraft');
+
+    // Empty State Support
+    expect(content).toContain('No commissions found');
+    expect(content).toContain('All Caught Up');
 
     // Inbound Messages & Memory Profile
     expect(content).toContain('Recent Inbound Messages');

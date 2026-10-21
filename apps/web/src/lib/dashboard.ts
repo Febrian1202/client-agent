@@ -276,20 +276,21 @@ export const DEFAULT_SAMPLE_DRAFTS: DraftItem[] = [
 ];
 
 export function computeMetricCards(summary?: DashboardSummary | null): MetricCardItem[] {
-  const activeCount = summary?.metrics?.activeCount ?? 5;
-  const inQueueCount = summary?.metrics?.inQueueCount ?? 3;
-  const completedCount = summary?.metrics?.completedMonthCount ?? 18;
-  const pendingCount = summary?.metrics?.pendingDraftCount ?? 3;
+  // Only fall back to sample values if summary is completely absent (null/undefined)
+  const isFallback = !summary;
+  const activeCount = isFallback ? 5 : (summary.metrics?.activeCount ?? 0);
+  const inQueueCount = isFallback ? 3 : (summary.metrics?.inQueueCount ?? 0);
+  const completedCount = isFallback ? 18 : (summary.metrics?.completedMonthCount ?? 0);
+  const pendingCount = isFallback ? 3 : (summary.metrics?.pendingDraftCount ?? 0);
 
-  // Calculate USD in pipeline from commissions if available
-  let pipelineUsd = 1850;
-  if (summary?.commissions && summary.commissions.length > 0) {
+  let pipelineUsd = 0;
+  if (isFallback) {
+    pipelineUsd = 1850;
+  } else if (summary.commissions && summary.commissions.length > 0) {
     const total = summary.commissions
       .filter((c) => ['in_progress', 'accepted', 'paid', 'active'].includes(c.status.toLowerCase()))
       .reduce((acc, c) => acc + (parseFloat(c.amount) || 0), 0);
-    if (total > 0) {
-      pipelineUsd = Math.round(total);
-    }
+    pipelineUsd = Math.round(total);
   }
 
   return [
