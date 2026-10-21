@@ -372,6 +372,7 @@
 				role="presentation"
 			></div>
 
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
 				class="relative bg-[#ffffff] border-2 border-[#c7e8fa] rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden"
 				role="dialog"
@@ -379,7 +380,6 @@
 				aria-labelledby="audit-modal-title"
 				tabindex="-1"
 				onclick={(e) => e.stopPropagation()}
-				onkeydown={(e) => e.stopPropagation()}
 			>
 				<!-- Modal Header -->
 				<div class="p-4 bg-[#ddf4ff]/40 border-b-2 border-[#c7e8fa] flex items-center justify-between">
