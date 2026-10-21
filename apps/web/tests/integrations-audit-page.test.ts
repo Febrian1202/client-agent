@@ -65,11 +65,12 @@ describe('Integrations & Audit Log Pages (/integrations & /audit-log)', () => {
       expect(content).toContain('Manual login');
     });
 
-    it('includes action buttons to test connection or refresh status', () => {
+    it('includes action buttons to test connection or refresh status and refreshes status', () => {
       const content = readFileSync(integrationsPagePath, 'utf8');
       expect(content).toContain('Test Connection');
       expect(content).toContain('Refresh');
       expect(content).toContain('api.listIntegrations');
+      expect(content).toContain('await loadIntegrations()');
     });
 
     it('fetches integration statuses via api.listIntegrations()', async () => {
@@ -139,7 +140,7 @@ describe('Integrations & Audit Log Pages (/integrations & /audit-log)', () => {
       expect(content).toContain('font-mono');
     });
 
-    it('provides actor filter tabs (All, User, Agent, System) and action search filter', () => {
+    it('provides actor filter tabs (All, User, Agent, System) and action search filter with client-side derived filtering', () => {
       const content = readFileSync(auditLogPagePath, 'utf8');
       expect(content).toContain('All');
       expect(content).toContain('User');
@@ -147,14 +148,17 @@ describe('Integrations & Audit Log Pages (/integrations & /audit-log)', () => {
       expect(content).toContain('System');
       expect(content).toContain('actorFilter');
       expect(content).toContain('actionFilter');
+      expect(content).toContain('api.listAuditLogs({ limit: 100 })');
     });
 
-    it('includes collapsible or modal JSON metadata inspector for immutable log records', () => {
+    it('includes collapsible or modal JSON metadata inspector with Escape and backdrop dismissibility', () => {
       const content = readFileSync(auditLogPagePath, 'utf8');
       expect(content).toContain('JSON.stringify');
       expect(content).toContain('metadata');
       expect(content).toContain('selectedLog');
       expect(content).toContain('role="dialog"');
+      expect(content).toContain("e.key === 'Escape'");
+      expect(content).toContain('e.stopPropagation()');
     });
 
     it('queries api.listAuditLogs with filter parameters', async () => {

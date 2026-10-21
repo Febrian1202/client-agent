@@ -134,11 +134,7 @@
 
 	async function loadAuditLogs() {
 		try {
-			const params: AuditLogListParams = {};
-			if (actorFilter !== 'all') {
-				params.actorType = actorFilter;
-			}
-			const logs = await api.listAuditLogs(params);
+			const logs = await api.listAuditLogs({ limit: 100 });
 			if (logs && logs.length > 0) {
 				allLogs = logs;
 			} else {
@@ -215,6 +211,8 @@
 <svelte:head>
 	<title>Audit Log | ClientAgent</title>
 </svelte:head>
+
+<svelte:window onkeydown={(e) => { if (selectedLog && e.key === 'Escape') closeInspector(); }} />
 
 <div class="space-y-6">
 	<!-- Page Header -->
@@ -366,13 +364,23 @@
 
 	<!-- Metadata Inspector Modal / Drawer -->
 	{#if selectedLog}
-		<div
-			class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="audit-modal-title"
-		>
-			<div class="bg-[#ffffff] border-2 border-[#c7e8fa] rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+		<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+			<!-- Backdrop overlay with click-to-dismiss -->
+			<div
+				class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+				onclick={closeInspector}
+				role="presentation"
+			></div>
+
+			<div
+				class="relative bg-[#ffffff] border-2 border-[#c7e8fa] rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="audit-modal-title"
+				tabindex="-1"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+			>
 				<!-- Modal Header -->
 				<div class="p-4 bg-[#ddf4ff]/40 border-b-2 border-[#c7e8fa] flex items-center justify-between">
 					<div class="flex items-center gap-2">

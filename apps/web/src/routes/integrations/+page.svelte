@@ -96,13 +96,14 @@
 		testingProvider = provider;
 		try {
 			if (provider === 'gmail') {
-				await api.listIntegrations();
+				await loadIntegrations();
 				showFeedback('Gmail Pub/Sub connection verified. Listening on push webhook.', 'success');
 			} else if (provider === 'discord') {
-				await api.listIntegrations();
+				await loadIntegrations();
 				showFeedback('Discord Bot connection verified. Online in #vgen-commissions.', 'success');
 			} else if (provider === 'vgen') {
 				// Verify browser session
+				await loadIntegrations();
 				vgenLastChecked = new Date().toISOString();
 				vgenSessionStatus = 'active';
 				showFeedback('VGen browser profile session valid and ready for automation.', 'success');
