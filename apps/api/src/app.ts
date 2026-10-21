@@ -11,6 +11,10 @@ import { verifyDiscordChannel } from './services/discord';
 import { taskRoutes } from './routes/tasks';
 import { conversationRoutes } from './routes/conversations';
 import { draftRoutes } from './routes/drafts';
+import { commissionRoutes } from './routes/commissions';
+import { clientRoutes } from './routes/clients';
+import { auditRoutes } from './routes/audits';
+import { dashboardRoutes } from './routes/dashboard';
 
 export const app = new Elysia()
   .use(
@@ -68,6 +72,10 @@ export const app = new Elysia()
   )
   .use(taskRoutes)
   .use(conversationRoutes)
-  .use(draftRoutes);
+  .use(draftRoutes)
+  .use(commissionRoutes)
+  .use(clientRoutes)
+  .use(auditRoutes)
+  .use(dashboardRoutes);
 
 export const createApp = () => app;
