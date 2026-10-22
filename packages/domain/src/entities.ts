@@ -6,6 +6,10 @@ import type {
   EventStatus,
   TaskStatus,
   TaskType,
+  MemoryType,
+  MemoryCategory,
+  MemorySource,
+  MemoryConfidence,
 } from './enums';
 
 export interface User {

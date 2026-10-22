@@ -91,12 +91,12 @@ describe('Client Memory Domain Service', () => {
     expect(grouped.facts.length).toBe(1);
     expect(grouped.preferences.length).toBe(1);
     expect(grouped.inferences.length).toBe(1);
-    expect(grouped.facts[0].type).toBe(MemoryType.FACT);
+    expect(grouped.facts[0]!.type).toBe(MemoryType.FACT);
   });
 
   it('updates memory content rejecting empty update', async () => {
     const list = await mockRepo.listMemoriesByClientId(1);
-    const target = list[0];
+    const target = list[0]!;
 
     await expect(updateMemory(mockRepo, target.id, '')).rejects.toThrow(
       'Memory content cannot be empty'
@@ -108,7 +108,7 @@ describe('Client Memory Domain Service', () => {
 
   it('deletes memory and confirms removal', async () => {
     const list = await mockRepo.listMemoriesByClientId(1);
-    const target = list[0];
+    const target = list[0]!;
 
     const deleted = await deleteMemory(mockRepo, target.id);
     expect(deleted).toBe(true);

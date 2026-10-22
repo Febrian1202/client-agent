@@ -117,6 +117,32 @@ export interface ClientItem {
   updatedAt: string | Date;
 }
 
+export interface ClientMemoryItem {
+  id: number;
+  clientId: number;
+  type: 'fact' | 'preference' | 'inference' | string;
+  category: 'technical' | 'scope' | 'assets' | 'general' | 'communication' | string;
+  content: string;
+  source: string;
+  confidence: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface GroupedClientMemories {
+  facts: ClientMemoryItem[];
+  preferences: ClientMemoryItem[];
+  inferences: ClientMemoryItem[];
+}
+
+export interface CreateClientMemoryInput {
+  type: 'fact' | 'preference' | 'inference' | string;
+  category: 'technical' | 'scope' | 'assets' | 'general' | 'communication' | string;
+  content: string;
+  source?: string;
+  confidence?: string;
+}
+
 export interface TaskItem {
   id: number;
   userId: number;
@@ -485,6 +511,55 @@ export class ApiClient {
   async getClient(id: number): Promise<ClientItem> {
     const res = await this.request<{ client: ClientItem }>(`/api/v1/clients/${id}`);
     return res.client;
+  }
+
+  async listClientMemories(
+    clientId: number
+  ): Promise<{ memories: ClientMemoryItem[]; grouped: GroupedClientMemories }> {
+    return this.request<{ memories: ClientMemoryItem[]; grouped: GroupedClientMemories }>(
+      `/api/v1/clients/${clientId}/memories`
+    );
+  }
+
+  async createClientMemory(
+    clientId: number,
+    input: CreateClientMemoryInput
+  ): Promise<ClientMemoryItem> {
+    const res = await this.request<{ memory: ClientMemoryItem }>(
+      `/api/v1/clients/${clientId}/memories`,
+      {
+        method: 'POST',
+        body: input,
+      }
+    );
+    return res.memory;
+  }
+
+  async updateClientMemory(
+    clientId: number,
+    memoryId: number,
+    content: string
+  ): Promise<ClientMemoryItem> {
+    const res = await this.request<{ memory: ClientMemoryItem }>(
+      `/api/v1/clients/${clientId}/memories/${memoryId}`,
+      {
+        method: 'PATCH',
+        body: { content },
+      }
+    );
+    return res.memory;
+  }
+
+  async deleteClientMemory(
+    clientId: number,
+    memoryId: number
+  ): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(
+      `/api/v1/clients/${clientId}/memories/${memoryId}`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   async listTasks(

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { api, type ClientItem, type CommissionItem } from '$lib/api';
+	import {
+		api,
+		type ClientItem,
+		type CommissionItem,
+		type ClientMemoryItem,
+	} from '$lib/api';
 	import {
 		DEFAULT_SAMPLE_CLIENTS,
 		DEFAULT_SAMPLE_COMMISSIONS,
@@ -20,15 +25,35 @@
 		CheckCircle2,
 		AlertCircle,
 		DollarSign,
-		Bookmark
+		Bookmark,
+		Plus,
+		Pencil,
+		Trash2,
+		X,
+		Tag
 	} from 'lucide-svelte';
 
 	let client = $state<ClientItem | null>(null);
 	let commissions = $state<CommissionItem[]>([]);
+	let memories = $state<ClientMemoryItem[]>([]);
 	let isLoading = $state(true);
 	let errorMessage = $state<string | null>(null);
 
+	// Modal State
+	let isMemoryModalOpen = $state(false);
+	let isSubmittingMemory = $state(false);
+	let memoryFormError = $state<string | null>(null);
+	let editingMemoryId = $state<number | null>(null);
+
+	let formType = $state<'fact' | 'preference' | 'inference'>('fact');
+	let formCategory = $state<'technical' | 'scope' | 'assets' | 'general' | 'communication'>('technical');
+	let formContent = $state('');
+
 	const clientId = $derived(Number(page.params.id));
+
+	const facts = $derived(memories.filter((m) => m.type.toLowerCase() === 'fact'));
+	const preferences = $derived(memories.filter((m) => m.type.toLowerCase() === 'preference'));
+	const inferences = $derived(memories.filter((m) => m.type.toLowerCase() === 'inference'));
 
 	async function loadClientData() {
 		isLoading = true;
@@ -46,7 +71,6 @@
 				const clientRes = await api.getClient(clientId);
 				client = clientRes;
 			} catch (err: any) {
-				// Fallback to sample data for preview or offline dev if client ID matches sample
 				const fallback = DEFAULT_SAMPLE_CLIENTS.find((c) => c.id === clientId);
 				if (fallback) {
 					client = fallback;
@@ -76,6 +100,89 @@
 						c.clientUsername?.toLowerCase() === client?.username.toLowerCase()
 				);
 			}
+
+			// Fetch memories for this client
+			try {
+				const memRes = await api.listClientMemories(clientId);
+				if (memRes && memRes.memories && memRes.memories.length > 0) {
+					memories = memRes.memories;
+				} else {
+					// Fallback to sample memory tags if database has none yet
+					const sample = getClientMemoryProfile(client?.username);
+					memories = [
+						...sample.facts.map((f, i) => ({
+							id: -(i + 1),
+							clientId,
+							type: 'fact',
+							category: 'technical',
+							content: f.text,
+							source: 'user_note',
+							confidence: 'high',
+							createdAt: new Date(),
+							updatedAt: new Date(),
+						})),
+						...sample.preferences.map((p, i) => ({
+							id: -(i + 10),
+							clientId,
+							type: 'preference',
+							category: 'scope',
+							content: p.text,
+							source: 'user_note',
+							confidence: 'high',
+							createdAt: new Date(),
+							updatedAt: new Date(),
+						})),
+						...sample.inferences.map((inf, i) => ({
+							id: -(i + 20),
+							clientId,
+							type: 'inference',
+							category: 'general',
+							content: inf.text,
+							source: 'agent_inference',
+							confidence: 'medium',
+							createdAt: new Date(),
+							updatedAt: new Date(),
+						})),
+					];
+				}
+			} catch {
+				const sample = getClientMemoryProfile(client?.username);
+				memories = [
+					...sample.facts.map((f, i) => ({
+						id: -(i + 1),
+						clientId,
+						type: 'fact',
+						category: 'technical',
+						content: f.text,
+						source: 'user_note',
+						confidence: 'high',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					})),
+					...sample.preferences.map((p, i) => ({
+						id: -(i + 10),
+						clientId,
+						type: 'preference',
+						category: 'scope',
+						content: p.text,
+						source: 'user_note',
+						confidence: 'high',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					})),
+					...sample.inferences.map((inf, i) => ({
+						id: -(i + 20),
+						clientId,
+						type: 'inference',
+						category: 'general',
+						content: inf.text,
+						source: 'agent_inference',
+						confidence: 'medium',
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					})),
+				];
+			}
 		} catch (err: any) {
 			errorMessage = err.message || 'Failed to load client details';
 		} finally {
@@ -89,7 +196,97 @@
 		}
 	});
 
-	const memoryProfile = $derived(getClientMemoryProfile(client?.username));
+	function openAddMemoryModal(defaultType: 'fact' | 'preference' | 'inference' = 'fact') {
+		editingMemoryId = null;
+		formType = defaultType;
+		formCategory = defaultType === 'preference' ? 'scope' : 'technical';
+		formContent = '';
+		memoryFormError = null;
+		isMemoryModalOpen = true;
+	}
+
+	function openEditMemoryModal(memory: ClientMemoryItem) {
+		editingMemoryId = memory.id;
+		formType = (memory.type as any) || 'fact';
+		formCategory = (memory.category as any) || 'general';
+		formContent = memory.content;
+		memoryFormError = null;
+		isMemoryModalOpen = true;
+	}
+
+	function closeMemoryModal() {
+		isMemoryModalOpen = false;
+		editingMemoryId = null;
+		formContent = '';
+		memoryFormError = null;
+	}
+
+	async function handleSaveMemory() {
+		if (!formContent.trim()) {
+			memoryFormError = 'Memory content cannot be empty';
+			return;
+		}
+
+		isSubmittingMemory = true;
+		memoryFormError = null;
+
+		try {
+			if (editingMemoryId !== null && editingMemoryId > 0) {
+				const updated = await api.updateClientMemory(clientId, editingMemoryId, formContent.trim());
+				memories = memories.map((m) => (m.id === editingMemoryId ? updated : m));
+			} else if (editingMemoryId !== null && editingMemoryId < 0) {
+				// Updating a sample preview note locally
+				memories = memories.map((m) =>
+					m.id === editingMemoryId
+						? { ...m, content: formContent.trim(), type: formType, category: formCategory, updatedAt: new Date() }
+						: m
+				);
+			} else {
+				const created = await api.createClientMemory(clientId, {
+					type: formType,
+					category: formCategory,
+					content: formContent.trim(),
+				});
+				memories = [created, ...memories.filter((m) => m.id > 0)];
+			}
+			closeMemoryModal();
+		} catch (err: any) {
+			memoryFormError = err.message || 'Failed to save memory';
+		} finally {
+			isSubmittingMemory = false;
+		}
+	}
+
+	async function handleDeleteMemory(memoryId: number) {
+		if (!confirm('Are you sure you want to remove this memory note?')) {
+			return;
+		}
+
+		try {
+			if (memoryId > 0) {
+				await api.deleteClientMemory(clientId, memoryId);
+			}
+			memories = memories.filter((m) => m.id !== memoryId);
+		} catch (err: any) {
+			alert(err.message || 'Failed to delete memory note');
+		}
+	}
+
+	function getCategoryBadge(cat?: string) {
+		const c = (cat || 'general').toLowerCase();
+		switch (c) {
+			case 'technical':
+				return { label: 'Technical', bg: 'bg-[#e0f2fe]', text: 'text-[#0284c7]', border: 'border-[#bae6fd]' };
+			case 'scope':
+				return { label: 'Scope', bg: 'bg-[#fef3c7]', text: 'text-[#d97706]', border: 'border-[#fde68a]' };
+			case 'assets':
+				return { label: 'Assets', bg: 'bg-[#dcfce7]', text: 'text-[#16a34a]', border: 'border-[#bbf7d0]' };
+			case 'communication':
+				return { label: 'Communication', bg: 'bg-[#f3e8ff]', text: 'text-[#9333ea]', border: 'border-[#e9d5ff]' };
+			default:
+				return { label: 'General', bg: 'bg-[#f1f5f9]', text: 'text-[#475569]', border: 'border-[#e2e8f0]' };
+		}
+	}
 
 	function formatDate(dateVal?: string | Date | null): string {
 		if (!dateVal) return 'Not specified';
@@ -262,9 +459,9 @@
 			</div>
 		</div>
 
-		<!-- Client Memory Profile Card -->
+		<!-- Client Memory & Notes Card -->
 		<div class="bg-white border-2 border-[#c7e8fa] rounded-xl p-6 shadow-sm space-y-5">
-			<div class="flex items-center justify-between">
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div class="flex items-center gap-3">
 					<div
 						class="w-10 h-10 rounded-xl bg-[#f3e5f5] border-2 border-[#e1bee7] flex items-center justify-center text-[#af71f5]"
@@ -273,77 +470,212 @@
 					</div>
 					<div>
 						<h2 class="text-lg font-black text-[#3c3c3c] tracking-tight">
-							Client Memory & Intelligence
+							Client Memory & Notes
 						</h2>
 						<p class="text-xs text-[#777777]">
-							Structured memory tags partitioned by epistemic certainty
+							Structured technical specs, scope habits, and verified facts used by the AI agent
 						</p>
 					</div>
 				</div>
+
+				<button
+					type="button"
+					onclick={() => openAddMemoryModal('fact')}
+					class="inline-flex items-center gap-2 px-4 py-2 bg-[#a5ed6e] text-[#1b4332] border-2 border-[#8ee052] rounded-xl font-black text-xs hover:bg-[#8ee052] transition cursor-pointer shadow-sm active:scale-95"
+				>
+					<Plus class="w-4 h-4" />
+					Add Memory Note
+				</button>
 			</div>
 
 			<!-- Memory Clusters -->
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<!-- Facts Column -->
 				<div class="bg-[#f4faff] border border-[#c7e8fa] rounded-xl p-4 space-y-3">
-					<div class="flex items-center gap-2">
-						<span
-							class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#e8f5e9] text-[#58cc02] border border-[#c8e6c9]"
-						>
-							FACT
-						</span>
-						<span class="text-xs font-bold text-[#777777]">Verified Truths</span>
-					</div>
-					<div class="space-y-2">
-						{#each memoryProfile.facts as item}
-							<div
-								class="p-2.5 bg-white border border-[#c8e6c9] rounded-lg text-xs font-semibold text-[#3c3c3c] shadow-xs"
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span
+								class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#e8f5e9] text-[#58cc02] border border-[#c8e6c9]"
 							>
-								{item.text}
-							</div>
-						{/each}
+								FACT
+							</span>
+							<span class="text-xs font-bold text-[#777777]">Technical Specs ({facts.length})</span>
+						</div>
+						<button
+							type="button"
+							onclick={() => openAddMemoryModal('fact')}
+							class="text-xs text-[#58cc02] font-black hover:underline cursor-pointer flex items-center gap-0.5"
+						>
+							<Plus class="w-3.5 h-3.5" />
+						</button>
+					</div>
+
+					<div class="space-y-2.5">
+						{#if facts.length === 0}
+							<p class="text-xs text-[#777777] italic py-2">No verified facts recorded.</p>
+						{:else}
+							{#each facts as item (item.id)}
+								{@const catBadge = getCategoryBadge(item.category)}
+								<div
+									class="p-3 bg-white border border-[#c8e6c9] rounded-xl text-xs space-y-2 shadow-xs group hover:border-[#58cc02] transition"
+								>
+									<div class="flex items-center justify-between gap-2">
+										<span
+											class="px-2 py-0.5 text-[10px] font-black uppercase rounded-md border {catBadge.bg} {catBadge.text} {catBadge.border}"
+										>
+											{catBadge.label}
+										</span>
+
+										<div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+											<button
+												type="button"
+												onclick={() => openEditMemoryModal(item)}
+												class="p-1 text-[#777777] hover:text-[#1cb0f6] rounded-md hover:bg-[#f4faff] transition cursor-pointer"
+												title="Edit note"
+											>
+												<Pencil class="w-3 h-3" />
+											</button>
+											<button
+												type="button"
+												onclick={() => handleDeleteMemory(item.id)}
+												class="p-1 text-[#777777] hover:text-[#ff4b4b] rounded-md hover:bg-[#fff0f0] transition cursor-pointer"
+												title="Delete note"
+											>
+												<Trash2 class="w-3 h-3" />
+											</button>
+										</div>
+									</div>
+
+									<p class="font-semibold text-[#3c3c3c] leading-relaxed">{item.content}</p>
+								</div>
+							{/each}
+						{/if}
 					</div>
 				</div>
 
 				<!-- Preferences Column -->
 				<div class="bg-[#f4faff] border border-[#c7e8fa] rounded-xl p-4 space-y-3">
-					<div class="flex items-center gap-2">
-						<span
-							class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#ddf4ff] text-[#1cb0f6] border border-[#c7e8fa]"
-						>
-							PREFERENCE
-						</span>
-						<span class="text-xs font-bold text-[#777777]">Observed Habits</span>
-					</div>
-					<div class="space-y-2">
-						{#each memoryProfile.preferences as item}
-							<div
-								class="p-2.5 bg-white border border-[#c7e8fa] rounded-lg text-xs font-semibold text-[#3c3c3c] shadow-xs"
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span
+								class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#ddf4ff] text-[#1cb0f6] border border-[#c7e8fa]"
 							>
-								{item.text}
-							</div>
-						{/each}
+								PREFERENCE
+							</span>
+							<span class="text-xs font-bold text-[#777777]">Scope Habits ({preferences.length})</span>
+						</div>
+						<button
+							type="button"
+							onclick={() => openAddMemoryModal('preference')}
+							class="text-xs text-[#1cb0f6] font-black hover:underline cursor-pointer flex items-center gap-0.5"
+						>
+							<Plus class="w-3.5 h-3.5" />
+						</button>
+					</div>
+
+					<div class="space-y-2.5">
+						{#if preferences.length === 0}
+							<p class="text-xs text-[#777777] italic py-2">No scope preferences recorded.</p>
+						{:else}
+							{#each preferences as item (item.id)}
+								{@const catBadge = getCategoryBadge(item.category)}
+								<div
+									class="p-3 bg-white border border-[#c7e8fa] rounded-xl text-xs space-y-2 shadow-xs group hover:border-[#1cb0f6] transition"
+								>
+									<div class="flex items-center justify-between gap-2">
+										<span
+											class="px-2 py-0.5 text-[10px] font-black uppercase rounded-md border {catBadge.bg} {catBadge.text} {catBadge.border}"
+										>
+											{catBadge.label}
+										</span>
+
+										<div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+											<button
+												type="button"
+												onclick={() => openEditMemoryModal(item)}
+												class="p-1 text-[#777777] hover:text-[#1cb0f6] rounded-md hover:bg-[#f4faff] transition cursor-pointer"
+												title="Edit preference"
+											>
+												<Pencil class="w-3 h-3" />
+											</button>
+											<button
+												type="button"
+												onclick={() => handleDeleteMemory(item.id)}
+												class="p-1 text-[#777777] hover:text-[#ff4b4b] rounded-md hover:bg-[#fff0f0] transition cursor-pointer"
+												title="Delete preference"
+											>
+												<Trash2 class="w-3 h-3" />
+											</button>
+										</div>
+									</div>
+
+									<p class="font-semibold text-[#3c3c3c] leading-relaxed">{item.content}</p>
+								</div>
+							{/each}
+						{/if}
 					</div>
 				</div>
 
 				<!-- Inferences Column -->
 				<div class="bg-[#f4faff] border border-[#c7e8fa] rounded-xl p-4 space-y-3">
-					<div class="flex items-center gap-2">
-						<span
-							class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#f3e5f5] text-[#af71f5] border border-[#e1bee7]"
-						>
-							INFERENCE
-						</span>
-						<span class="text-xs font-bold text-[#777777]">AI Hypotheses</span>
-					</div>
-					<div class="space-y-2">
-						{#each memoryProfile.inferences as item}
-							<div
-								class="p-2.5 bg-white border border-[#e1bee7] rounded-lg text-xs font-semibold text-[#3c3c3c] shadow-xs"
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span
+								class="px-2 py-0.5 text-xs font-black rounded-lg bg-[#f3e5f5] text-[#af71f5] border border-[#e1bee7]"
 							>
-								{item.text}
-							</div>
-						{/each}
+								INFERENCE
+							</span>
+							<span class="text-xs font-bold text-[#777777]">AI Hypotheses ({inferences.length})</span>
+						</div>
+						<button
+							type="button"
+							onclick={() => openAddMemoryModal('inference')}
+							class="text-xs text-[#af71f5] font-black hover:underline cursor-pointer flex items-center gap-0.5"
+						>
+							<Plus class="w-3.5 h-3.5" />
+						</button>
+					</div>
+
+					<div class="space-y-2.5">
+						{#if inferences.length === 0}
+							<p class="text-xs text-[#777777] italic py-2">No unverified hypotheses recorded.</p>
+						{:else}
+							{#each inferences as item (item.id)}
+								{@const catBadge = getCategoryBadge(item.category)}
+								<div
+									class="p-3 bg-white border border-[#e1bee7] rounded-xl text-xs space-y-2 shadow-xs group hover:border-[#af71f5] transition"
+								>
+									<div class="flex items-center justify-between gap-2">
+										<span
+											class="px-2 py-0.5 text-[10px] font-black uppercase rounded-md border {catBadge.bg} {catBadge.text} {catBadge.border}"
+										>
+											{catBadge.label}
+										</span>
+
+										<div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+											<button
+												type="button"
+												onclick={() => openEditMemoryModal(item)}
+												class="p-1 text-[#777777] hover:text-[#1cb0f6] rounded-md hover:bg-[#f4faff] transition cursor-pointer"
+												title="Edit hypothesis"
+											>
+												<Pencil class="w-3 h-3" />
+											</button>
+											<button
+												type="button"
+												onclick={() => handleDeleteMemory(item.id)}
+												class="p-1 text-[#777777] hover:text-[#ff4b4b] rounded-md hover:bg-[#fff0f0] transition cursor-pointer"
+												title="Delete hypothesis"
+											>
+												<Trash2 class="w-3 h-3" />
+											</button>
+										</div>
+									</div>
+
+									<p class="font-semibold text-[#3c3c3c] leading-relaxed">{item.content}</p>
+								</div>
+							{/each}
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -428,3 +760,107 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Modal Dialog: Add / Edit Memory Note -->
+{#if isMemoryModalOpen}
+	<div
+		class="fixed inset-0 z-50 bg-[#3c3c3c]/50 backdrop-blur-xs flex items-center justify-center p-4"
+	>
+		<div
+			class="bg-white border-2 border-[#c7e8fa] rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150"
+		>
+			<div class="flex items-center justify-between border-b border-[#f4faff] pb-3">
+				<div class="flex items-center gap-2">
+					<Sparkles class="w-5 h-5 text-[#af71f5]" />
+					<h3 class="text-base font-black text-[#3c3c3c]">
+						{editingMemoryId !== null ? 'Edit Memory Note' : 'Add Client Memory'}
+					</h3>
+				</div>
+				<button
+					type="button"
+					onclick={closeMemoryModal}
+					class="p-1 text-[#777777] hover:text-[#3c3c3c] rounded-lg hover:bg-[#f4faff] transition cursor-pointer"
+				>
+					<X class="w-5 h-5" />
+				</button>
+			</div>
+
+			{#if memoryFormError}
+				<div
+					class="p-3 bg-[#fff0f0] border border-[#ffcdd2] rounded-xl text-xs font-bold text-[#ff4b4b] flex items-center gap-2"
+				>
+					<AlertCircle class="w-4 h-4 shrink-0" />
+					<span>{memoryFormError}</span>
+				</div>
+			{/if}
+
+			<div class="space-y-4">
+				<!-- Memory Type -->
+				<div>
+					<label for="mem-type" class="block text-xs font-bold text-[#777777] mb-1.5">
+						Epistemic Type
+					</label>
+					<select
+						id="mem-type"
+						bind:value={formType}
+						class="w-full bg-[#f4faff] border-2 border-[#c7e8fa] rounded-xl px-3 py-2 text-xs font-bold text-[#3c3c3c] focus:outline-hidden focus:border-[#1cb0f6]"
+					>
+						<option value="fact">FACT (Verified technical spec, link, or rule)</option>
+						<option value="preference">PREFERENCE (Scope habit, review order, style)</option>
+						<option value="inference">INFERENCE (Tentative hypothesis - never stated as fact)</option>
+					</select>
+				</div>
+
+				<!-- Category -->
+				<div>
+					<label for="mem-cat" class="block text-xs font-bold text-[#777777] mb-1.5">
+						Scope Category
+					</label>
+					<select
+						id="mem-cat"
+						bind:value={formCategory}
+						class="w-full bg-[#f4faff] border-2 border-[#c7e8fa] rounded-xl px-3 py-2 text-xs font-bold text-[#3c3c3c] focus:outline-hidden focus:border-[#1cb0f6]"
+					>
+						<option value="technical">Technical (Software, Cubism, Model Rig params)</option>
+						<option value="scope">Scope (Separation cuts, milestones, revisions)</option>
+						<option value="assets">Assets (Master PSD link, references, drive folder)</option>
+						<option value="communication">Communication (Timezone, language, messaging style)</option>
+						<option value="general">General (Notes & metadata)</option>
+					</select>
+				</div>
+
+				<!-- Content Textarea -->
+				<div>
+					<label for="mem-content" class="block text-xs font-bold text-[#777777] mb-1.5">
+						Memory Content / Note
+					</label>
+					<textarea
+						id="mem-content"
+						bind:value={formContent}
+						rows="4"
+						placeholder="e.g. Uses VTube Studio on iOS tracking. Model was created with Live2D Cubism 5.0."
+						class="w-full bg-[#f4faff] border-2 border-[#c7e8fa] rounded-xl p-3 text-xs font-medium text-[#3c3c3c] focus:outline-hidden focus:border-[#1cb0f6] resize-none"
+					></textarea>
+				</div>
+			</div>
+
+			<div class="flex items-center justify-end gap-3 pt-3 border-t border-[#f4faff]">
+				<button
+					type="button"
+					onclick={closeMemoryModal}
+					class="px-4 py-2 bg-white border-2 border-[#c7e8fa] text-[#777777] rounded-xl font-bold text-xs hover:bg-[#f4faff] transition cursor-pointer"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					onclick={handleSaveMemory}
+					disabled={isSubmittingMemory}
+					class="px-4 py-2 bg-[#a5ed6e] text-[#1b4332] border-2 border-[#8ee052] rounded-xl font-black text-xs hover:bg-[#8ee052] transition cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+				>
+					{isSubmittingMemory ? 'Saving...' : editingMemoryId !== null ? 'Save Changes' : 'Add Note'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

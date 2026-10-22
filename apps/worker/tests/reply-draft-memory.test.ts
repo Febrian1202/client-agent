@@ -31,11 +31,9 @@ describe('Worker Reply Draft with Client Memory', () => {
       username: `mem_worker_${suffix}`,
     });
     conv = await insertConversation({
-      userId: ownerId,
       clientId: client.id,
       platform: 'vgen',
       externalId: `conv_${suffix}`,
-      externalThreadId: `thread_${suffix}`,
     });
 
     await insertClientMemory({
