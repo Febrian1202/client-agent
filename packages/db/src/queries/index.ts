@@ -9,3 +9,4 @@ export * from './audits';
 export * from './agentRuns';
 export * from './drafts';
 export * from './commissions';
+export * from './client_memories';

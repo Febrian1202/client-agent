@@ -10,3 +10,4 @@ export * from './agent_runs';
 export * from './drafts';
 export * from './approvals';
 export * from './commissions';
+export * from './client_memories';
