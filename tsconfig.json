@@ -33,7 +33,11 @@
       "@client-agent/browser": ["./packages/browser/src/index.ts"],
       "@client-agent/browser/*": ["./packages/browser/src/*"],
       "@client-agent/vgen": ["./packages/vgen/src/index.ts"],
-      "@client-agent/vgen/*": ["./packages/vgen/src/*"]
+      "@client-agent/vgen/*": ["./packages/vgen/src/*"],
+      "@client-agent/ai": ["./packages/ai/src/index.ts"],
+      "@client-agent/ai/*": ["./packages/ai/src/*"],
+      "@client-agent/agent": ["./packages/agent/src/index.ts"],
+      "@client-agent/agent/*": ["./packages/agent/src/*"]
     }
   },
   "include": [

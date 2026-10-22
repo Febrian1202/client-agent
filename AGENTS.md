@@ -27,7 +27,8 @@ This is a **single-user personal tool**, not a multi-tenant SaaS. Keep solutions
 - **Phase 5 (Approval System):** COMPLETED (Draft state machine, approval invalidation on content edits, REST API `/api/v1/drafts`, Discord interactive buttons & edit modal, approvals table & SHA-256 contentHash tracking, immutable audit logs).
 - **Phase 6 (VGen Send):** COMPLETED (7-point safety gate, browser send automation & ambiguous recovery, SEND_VGEN_MESSAGE worker handler, REST API POST /drafts/:id/send, Discord approve auto-dispatch, live profile extraction & thread drawer opening, E2E test suite).
 - **Phase 7 (Web Dashboard):** COMPLETED (SvelteKit web dashboard UI for tasks, conversations, drafts, clients, commissions, and logs adhering strictly to `DESIGN.md` and `docs/pen/ui.pen`).
-- **Phase 8 (Client Memory):** Upcoming: Persistent client context (`FACT`, `PREFERENCE`, `INFERENCE`).
+- **Phase 8 (Client Memory):** COMPLETED (Persistent client context `FACT`, `PREFERENCE`, `INFERENCE`, prompt injection with epistemic segregation, REST API, SvelteKit memory management UI).
+- **Phase 9 (Multi-Platform):** Upcoming: Additional notification channels and platform adapters (Telegram bot, etc.).
 
 ---
 

@@ -31,21 +31,21 @@
 ## Atomic Task Breakdown
 
 ### Task 8.1: Database Schema for Client Memory
-- [ ] In `packages/db/src/schema/client_memories.ts`, define `client_memories` table:
+- [x] In `packages/db/src/schema/client_memories.ts`, define `client_memories` table:
   - `id`: `bigserial` primary key
   - `client_id`: `bigint` references `clients(id)` on delete cascade
   - `type`: `text` not null (`fact`, `preference`, `inference`)
-  - `category`: `text` not null (`communication`, `style`, `budget`, `project`, `general`)
-  - `content`: `text` not null (e.g. `"Client's timezone is UTC+9 (Japan). Direct, concise communication preferred."`)
+  - `category`: `text` not null (`technical`, `scope`, `assets`, `communication`, `general`)
+  - `content`: `text` not null (e.g. `"Uses VTube Studio on iOS tracking. Model was created with Live2D Cubism 5.0."`)
   - `source`: `text` not null (`user_note`, `conversation_extraction`, `agent_inference`)
   - `confidence`: `text` default `'high'` (`high`, `medium`, `low`)
   - `created_at`, `updated_at`: `timestamp with time zone` default `now()`
-- [ ] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
+- [x] Run migration: `bun run --filter=@client-agent/db db:generate && bun run --filter=@client-agent/db db:migrate`.
 
 ---
 
 ### Task 8.2: Memory Extraction & Persistence Service in `packages/domain`
-- [ ] In `packages/domain/src/services/memoryService.ts`:
+- [x] In `packages/domain/src/services/memoryService.ts`:
   - `addMemory({ clientId, type, category, content, source, confidence })`:
     - Inserts new memory record.
   - `getClientMemories(clientId: number)`:
@@ -58,7 +58,7 @@
 ---
 
 ### Task 8.3: Context Builder Injection in `packages/agent`
-- [ ] In `packages/agent/src/prompts/contextBuilder.ts`:
+- [x] In `packages/agent/src/prompts/builder.ts`:
   - Enhance context assembler to load memories for target client:
     ```text
     CLIENT BACKGROUND & MEMORY:
@@ -79,7 +79,7 @@
 ---
 
 ### Task 8.4: Memory Management API Endpoints in `apps/api`
-- [ ] In `apps/api/src/routes/clients.ts`:
+- [x] In `apps/api/src/routes/clients.ts`:
   - `GET /api/v1/clients/:id/memories` — List all memories for client.
   - `POST /api/v1/clients/:id/memories` — Add a new manual fact or preference.
   - `PATCH /api/v1/clients/:id/memories/:memoryId` — Update memory text.
@@ -88,7 +88,7 @@
 ---
 
 ### Task 8.5: SvelteKit Memory UI on Client Details Page
-- [ ] In `apps/web/src/routes/clients/[id]/+page.svelte`:
+- [x] In `apps/web/src/routes/clients/[id]/+page.svelte`:
   - Add "Client Memory & Notes" section:
     - Fact badges (Green outline)
     - Preference badges (Blue outline)
@@ -120,7 +120,8 @@
 ---
 
 ## Done When Checklist
-- [ ] `client_memories` table stores categorized memory records with source and confidence metadata.
-- [ ] Agent context builder correctly formats memory blocks, strictly separating `FACT` from `INFERENCE`.
-- [ ] Draft generation noticeably reflects stored client preferences without hallucinating unfounded claims.
-- [ ] Web dashboard allows the creator to view, add, edit, and delete client memories cleanly.
+- [x] `client_memories` table stores categorized memory records with source and confidence metadata.
+- [x] Agent context builder correctly formats memory blocks, strictly separating `FACT` from `INFERENCE`.
+- [x] Draft generation noticeably reflects stored client preferences without hallucinating unfounded claims.
+- [x] Web dashboard allows the creator to view, add, edit, and delete client memories cleanly.
+
