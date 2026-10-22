@@ -156,3 +156,16 @@ export interface AuditLog {
   ipAddress?: string | null;
   createdAt: Date;
 }
+
+export interface ClientMemory {
+  id: number;
+  clientId: number;
+  type: MemoryType | string;
+  category: MemoryCategory | string;
+  content: string;
+  source: MemorySource | string;
+  confidence: MemoryConfidence | string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

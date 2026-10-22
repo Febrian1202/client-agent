@@ -70,3 +70,30 @@ export enum AuditAction {
   INTEGRATION_CONNECTED = 'INTEGRATION_CONNECTED',
   INTEGRATION_DISCONNECTED = 'INTEGRATION_DISCONNECTED',
 }
+
+export enum MemoryType {
+  FACT = 'fact',
+  PREFERENCE = 'preference',
+  INFERENCE = 'inference',
+}
+
+export enum MemoryCategory {
+  TECHNICAL = 'technical',
+  SCOPE = 'scope',
+  ASSETS = 'assets',
+  GENERAL = 'general',
+  COMMUNICATION = 'communication',
+}
+
+export enum MemorySource {
+  USER_NOTE = 'user_note',
+  CONVERSATION_EXTRACTION = 'conversation_extraction',
+  AGENT_INFERENCE = 'agent_inference',
+}
+
+export enum MemoryConfidence {
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low',
+}
+

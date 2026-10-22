@@ -4,4 +4,5 @@ export * from './entities';
 export * from './session';
 export * from './api';
 export * from './services/draftService';
+export * from './services/memoryService';
 export * from './safety';
