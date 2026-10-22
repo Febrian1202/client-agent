@@ -208,21 +208,22 @@ working system that does something useful.
 
 ---
 
-## Phase 7 — SvelteKit Dashboard (Next Up)
+## Phase 7 — SvelteKit Dashboard (Completed)
 
-> **Detailed Guide:** See [docs/phase/phase-7-dashboard.md](phase/phase-7-dashboard.md)
+> **Detailed Guide:** See [docs/phase/phase-7-dashboard.md](phase/phase-7-dashboard.md)  
+> **Status:** Completed (Merged to main)
 
 **Goal:** Visual management interface.
 
 ```
-[ ] Dashboard overview (counts, recent activity)
-[ ] Conversation list and viewer
-[ ] Draft viewer/editor with approve/reject
-[ ] Client list and detail pages
-[ ] Commission viewer
-[ ] Agent task status page
-[ ] Integration settings page
-[ ] Audit log viewer
+[x] Dashboard overview (counts, recent activity)
+[x] Conversation list and viewer
+[x] Draft viewer/editor with approve/reject
+[x] Client list and detail pages
+[x] Commission viewer
+[x] Agent task status page
+[x] Integration settings page
+[x] Audit log viewer
 ```
 
 **Priority order:**
