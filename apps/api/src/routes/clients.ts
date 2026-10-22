@@ -2,6 +2,11 @@ import { Elysia, t } from 'elysia';
 import {
   getClientById,
   listClients,
+  insertClientMemory,
+  getClientMemoryById,
+  listClientMemories,
+  updateClientMemory,
+  deleteClientMemory,
 } from '@client-agent/db';
 import { authPlugin } from '../auth/plugin';
 
@@ -74,6 +79,212 @@ export function createClientRoutes() {
         isAuth: true,
         params: t.Object({
           id: t.Numeric(),
+        }),
+      }
+    )
+    .get(
+      '/:id/memories',
+      async ({ params, set }) => {
+        const clientId = Number(params.id);
+        if (Number.isNaN(clientId) || clientId <= 0) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_CLIENT_ID',
+              message: 'Client ID must be a positive integer',
+            },
+          };
+        }
+
+        const client = await getClientById(clientId);
+        if (!client) {
+          set.status = 404;
+          return {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Client not found',
+            },
+          };
+        }
+
+        const memories = await listClientMemories(clientId);
+        const grouped = {
+          facts: memories.filter((m) => m.type === 'fact'),
+          preferences: memories.filter((m) => m.type === 'preference'),
+          inferences: memories.filter((m) => m.type === 'inference'),
+        };
+
+        return {
+          memories,
+          grouped,
+        };
+      },
+      {
+        isAuth: true,
+        params: t.Object({
+          id: t.Numeric(),
+        }),
+      }
+    )
+    .post(
+      '/:id/memories',
+      async ({ params, body, set }) => {
+        const clientId = Number(params.id);
+        if (Number.isNaN(clientId) || clientId <= 0) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_CLIENT_ID',
+              message: 'Client ID must be a positive integer',
+            },
+          };
+        }
+
+        const client = await getClientById(clientId);
+        if (!client) {
+          set.status = 404;
+          return {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Client not found',
+            },
+          };
+        }
+
+        const content = body.content ? body.content.trim() : '';
+        if (!content) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_CONTENT',
+              message: 'Memory content cannot be empty',
+            },
+          };
+        }
+
+        const validTypes = ['fact', 'preference', 'inference'];
+        const type = body.type.toLowerCase();
+        if (!validTypes.includes(type)) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_TYPE',
+              message: `Memory type must be one of: ${validTypes.join(', ')}`,
+            },
+          };
+        }
+
+        const memory = await insertClientMemory({
+          clientId,
+          type,
+          category: body.category.toLowerCase(),
+          content,
+          source: body.source,
+          confidence: body.confidence,
+        });
+
+        set.status = 201;
+        return { memory };
+      },
+      {
+        isAuth: true,
+        params: t.Object({
+          id: t.Numeric(),
+        }),
+        body: t.Object({
+          type: t.String(),
+          category: t.String(),
+          content: t.String(),
+          source: t.Optional(t.String()),
+          confidence: t.Optional(t.String()),
+        }),
+      }
+    )
+    .patch(
+      '/:id/memories/:memoryId',
+      async ({ params, body, set }) => {
+        const clientId = Number(params.id);
+        const memoryId = Number(params.memoryId);
+        if (Number.isNaN(clientId) || clientId <= 0 || Number.isNaN(memoryId) || memoryId <= 0) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_ID',
+              message: 'Client and Memory IDs must be positive integers',
+            },
+          };
+        }
+
+        const existing = await getClientMemoryById(memoryId);
+        if (!existing || existing.clientId !== clientId) {
+          set.status = 404;
+          return {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Memory not found for this client',
+            },
+          };
+        }
+
+        const content = body.content ? body.content.trim() : '';
+        if (!content) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_CONTENT',
+              message: 'Memory content cannot be empty',
+            },
+          };
+        }
+
+        const updated = await updateClientMemory(memoryId, content);
+        return { memory: updated };
+      },
+      {
+        isAuth: true,
+        params: t.Object({
+          id: t.Numeric(),
+          memoryId: t.Numeric(),
+        }),
+        body: t.Object({
+          content: t.String(),
+        }),
+      }
+    )
+    .delete(
+      '/:id/memories/:memoryId',
+      async ({ params, set }) => {
+        const clientId = Number(params.id);
+        const memoryId = Number(params.memoryId);
+        if (Number.isNaN(clientId) || clientId <= 0 || Number.isNaN(memoryId) || memoryId <= 0) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_ID',
+              message: 'Client and Memory IDs must be positive integers',
+            },
+          };
+        }
+
+        const existing = await getClientMemoryById(memoryId);
+        if (!existing || existing.clientId !== clientId) {
+          set.status = 404;
+          return {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Memory not found for this client',
+            },
+          };
+        }
+
+        await deleteClientMemory(memoryId);
+        return { success: true };
+      },
+      {
+        isAuth: true,
+        params: t.Object({
+          id: t.Numeric(),
+          memoryId: t.Numeric(),
         }),
       }
     );
