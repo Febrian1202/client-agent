@@ -538,13 +538,14 @@ export class ApiClient {
   async updateClientMemory(
     clientId: number,
     memoryId: number,
-    content: string
+    data: string | { content?: string; type?: string; category?: string }
   ): Promise<ClientMemoryItem> {
+    const body = typeof data === 'string' ? { content: data } : data;
     const res = await this.request<{ memory: ClientMemoryItem }>(
       `/api/v1/clients/${clientId}/memories/${memoryId}`,
       {
         method: 'PATCH',
-        body: { content },
+        body,
       }
     );
     return res.memory;

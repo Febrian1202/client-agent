@@ -104,46 +104,8 @@
 			// Fetch memories for this client
 			try {
 				const memRes = await api.listClientMemories(clientId);
-				if (memRes && memRes.memories && memRes.memories.length > 0) {
+				if (memRes && Array.isArray(memRes.memories)) {
 					memories = memRes.memories;
-				} else {
-					// Fallback to sample memory tags if database has none yet
-					const sample = getClientMemoryProfile(client?.username);
-					memories = [
-						...sample.facts.map((f, i) => ({
-							id: -(i + 1),
-							clientId,
-							type: 'fact',
-							category: 'technical',
-							content: f.text,
-							source: 'user_note',
-							confidence: 'high',
-							createdAt: new Date(),
-							updatedAt: new Date(),
-						})),
-						...sample.preferences.map((p, i) => ({
-							id: -(i + 10),
-							clientId,
-							type: 'preference',
-							category: 'scope',
-							content: p.text,
-							source: 'user_note',
-							confidence: 'high',
-							createdAt: new Date(),
-							updatedAt: new Date(),
-						})),
-						...sample.inferences.map((inf, i) => ({
-							id: -(i + 20),
-							clientId,
-							type: 'inference',
-							category: 'general',
-							content: inf.text,
-							source: 'agent_inference',
-							confidence: 'medium',
-							createdAt: new Date(),
-							updatedAt: new Date(),
-						})),
-					];
 				}
 			} catch {
 				const sample = getClientMemoryProfile(client?.username);
@@ -183,6 +145,7 @@
 					})),
 				];
 			}
+
 		} catch (err: any) {
 			errorMessage = err.message || 'Failed to load client details';
 		} finally {
@@ -232,7 +195,11 @@
 
 		try {
 			if (editingMemoryId !== null && editingMemoryId > 0) {
-				const updated = await api.updateClientMemory(clientId, editingMemoryId, formContent.trim());
+				const updated = await api.updateClientMemory(clientId, editingMemoryId, {
+					content: formContent.trim(),
+					type: formType,
+					category: formCategory,
+				});
 				memories = memories.map((m) => (m.id === editingMemoryId ? updated : m));
 			} else if (editingMemoryId !== null && editingMemoryId < 0) {
 				// Updating a sample preview note locally
@@ -250,7 +217,8 @@
 				memories = [created, ...memories.filter((m) => m.id > 0)];
 			}
 			closeMemoryModal();
-		} catch (err: any) {
+		}
+ catch (err: any) {
 			memoryFormError = err.message || 'Failed to save memory';
 		} finally {
 			isSubmittingMemory = false;

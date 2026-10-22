@@ -48,17 +48,36 @@ export async function listClientMemories(clientId: number, type?: string): Promi
     .orderBy(desc(clientMemories.createdAt));
 }
 
-export async function updateClientMemory(id: number, content: string): Promise<ClientMemoryRow | null> {
+export interface UpdateClientMemoryInput {
+  content?: string;
+  type?: string;
+  category?: string;
+}
+
+export async function updateClientMemory(
+  id: number,
+  contentOrInput: string | UpdateClientMemoryInput
+): Promise<ClientMemoryRow | null> {
+  const patch: Record<string, any> = {
+    updatedAt: sql`now()`,
+  };
+
+  if (typeof contentOrInput === 'string') {
+    patch.content = contentOrInput;
+  } else {
+    if (contentOrInput.content !== undefined) patch.content = contentOrInput.content;
+    if (contentOrInput.type !== undefined) patch.type = contentOrInput.type;
+    if (contentOrInput.category !== undefined) patch.category = contentOrInput.category;
+  }
+
   const rows = await db
     .update(clientMemories)
-    .set({
-      content,
-      updatedAt: sql`now()`,
-    })
+    .set(patch)
     .where(eq(clientMemories.id, id))
     .returning();
   return rows[0] ?? null;
 }
+
 
 export async function deleteClientMemory(id: number): Promise<boolean> {
   const rows = await db

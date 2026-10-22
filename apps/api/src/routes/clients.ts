@@ -226,8 +226,8 @@ export function createClientRoutes() {
           };
         }
 
-        const content = body.content ? body.content.trim() : '';
-        if (!content) {
+        const content = body.content !== undefined ? body.content.trim() : undefined;
+        if (content !== undefined && !content) {
           set.status = 400;
           return {
             error: {
@@ -237,7 +237,23 @@ export function createClientRoutes() {
           };
         }
 
-        const updated = await updateClientMemory(memoryId, content);
+        const validTypes = ['fact', 'preference', 'inference'];
+        const type = body.type ? body.type.toLowerCase() : undefined;
+        if (type && !validTypes.includes(type)) {
+          set.status = 400;
+          return {
+            error: {
+              code: 'INVALID_TYPE',
+              message: `Memory type must be one of: ${validTypes.join(', ')}`,
+            },
+          };
+        }
+
+        const updated = await updateClientMemory(memoryId, {
+          content,
+          type,
+          category: body.category ? body.category.toLowerCase() : undefined,
+        });
         return { memory: updated };
       },
       {
@@ -247,7 +263,9 @@ export function createClientRoutes() {
           memoryId: t.Numeric(),
         }),
         body: t.Object({
-          content: t.String(),
+          content: t.Optional(t.String()),
+          type: t.Optional(t.String()),
+          category: t.Optional(t.String()),
         }),
       }
     )
