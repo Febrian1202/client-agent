@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import { CommissionStatus } from '@client-agent/domain';
 import {
   getCommissionById,
   listCommissions,
@@ -120,7 +121,7 @@ export function createCommissionRoutes() {
             currency: t.String(),
             estimatedStart: t.Nullable(t.String()),
             guaranteedDelivery: t.Nullable(t.String()),
-            status: t.String(),
+            status: t.Optional(t.Enum(CommissionStatus)),
             metadata: t.Record(t.String(), t.Any()),
           })
         ),

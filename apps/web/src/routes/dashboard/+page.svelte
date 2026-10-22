@@ -116,6 +116,19 @@
 		return DEFAULT_SAMPLE_DRAFTS[0];
 	});
 
+	let lastDraftId = $state<number | null>(null);
+	$effect(() => {
+		if (activeDraft && activeDraft.id !== lastDraftId) {
+			lastDraftId = activeDraft.id;
+			draftContent = activeDraft.content;
+			isEditingDraft = false;
+		} else if (!activeDraft) {
+			lastDraftId = null;
+			draftContent = '';
+			isEditingDraft = false;
+		}
+	});
+
 	const draftApprovalContext = $derived(getDraftApprovalContext(activeDraft));
 
 	const recentMessages = $derived.by(() => {
@@ -132,9 +145,10 @@
 	// Actions
 	async function handleSyncVGen() {
 		isSyncing = true;
+		const syncUsername = summary?.commissions?.[0]?.clientUsername || 'KitsuneMei';
 		try {
 			try {
-				await api.syncConversation('KitsuneMei');
+				await api.syncConversation(syncUsername);
 			} catch {
 				// Continue to refresh
 			}
@@ -203,19 +217,37 @@
 		}
 	}
 
-	function handleCommissionAction(action: string, comm: ReturnType<typeof formatCommissionCard>) {
+	async function handleCommissionAction(action: string, comm: ReturnType<typeof formatCommissionCard>) {
 		if (action === 'Open Thread') {
 			goto('/conversations');
 			return;
 		}
+		if (action === 'Update Stage') {
+			goto('/commissions');
+			return;
+		}
 		if (action === 'Accept Commission') {
-			showToast(`Commission ${comm.orderId} accepted into active pipeline!`, 'success');
-			comm.raw.status = 'in_progress';
+			try {
+				if (comm.raw.id) {
+					await api.updateCommission(comm.raw.id, { status: 'in_progress' });
+				}
+				comm.raw.status = 'in_progress';
+				showToast(`Commission ${comm.orderId} accepted into active pipeline!`, 'success');
+			} catch (err: any) {
+				showToast(`Failed to update commission: ${err?.message || 'Unknown error'}`, 'error');
+			}
 			return;
 		}
 		if (action === 'Mark Completed') {
-			showToast(`Commission ${comm.orderId} marked as completed & delivered!`, 'success');
-			comm.raw.status = 'completed';
+			try {
+				if (comm.raw.id) {
+					await api.updateCommission(comm.raw.id, { status: 'completed' });
+				}
+				comm.raw.status = 'completed';
+				showToast(`Commission ${comm.orderId} marked as completed & delivered!`, 'success');
+			} catch (err: any) {
+				showToast(`Failed to update commission: ${err?.message || 'Unknown error'}`, 'error');
+			}
 			return;
 		}
 		showToast(`${action} recorded for ${comm.orderId}.`, 'info');

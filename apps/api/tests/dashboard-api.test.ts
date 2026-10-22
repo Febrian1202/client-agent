@@ -223,6 +223,20 @@ describe('Dashboard REST API Endpoints', () => {
     expect(patchBody.commission.status).toBe(CommissionStatus.ACCEPTED);
     expect(Number(patchBody.commission.amount)).toBe(250);
 
+    const invalidStatusRes = await app.handle(
+      new Request(`http://localhost/api/v1/commissions/${comm.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: cookieHeader,
+        },
+        body: JSON.stringify({
+          status: 'non_existent_status',
+        }),
+      })
+    );
+    expect(invalidStatusRes.status).toBe(422);
+
     const notFoundRes = await app.handle(
       new Request('http://localhost/api/v1/commissions/999999999', {
         headers: { Cookie: cookieHeader },

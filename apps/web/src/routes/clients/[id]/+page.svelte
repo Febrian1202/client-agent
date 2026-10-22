@@ -34,11 +34,13 @@
 		isLoading = true;
 		errorMessage = null;
 
-		try {
-			if (isNaN(clientId) || clientId <= 0) {
-				throw new Error('Invalid client ID');
-			}
+		if (Number.isNaN(clientId) || clientId <= 0) {
+			errorMessage = 'Invalid client ID';
+			isLoading = false;
+			return;
+		}
 
+		try {
 			// Fetch client details
 			try {
 				const clientRes = await api.getClient(clientId);
@@ -82,7 +84,7 @@
 	}
 
 	$effect(() => {
-		if (clientId) {
+		if (page.params.id) {
 			loadClientData();
 		}
 	});

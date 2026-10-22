@@ -2,8 +2,7 @@
 	import { onMount } from 'svelte';
 	import {
 		api,
-		type DraftItem,
-		type DraftListParams
+		type DraftItem
 	} from '$lib/api';
 
 	type DraftWithHash = DraftItem & { contentHash?: string | null };
@@ -20,10 +19,7 @@
 		X,
 		Save,
 		Hash,
-		MessageSquare,
-		User,
-		Info,
-		RotateCcw
+		Info
 	} from 'lucide-svelte';
 
 	// Tab definition
@@ -327,6 +323,10 @@
 		isSubmittingRejection = false;
 	}
 
+	function handleWindowKeydown(e: KeyboardEvent) {
+		if (rejectionModalDraft && e.key === 'Escape') closeRejectionModal();
+	}
+
 	// Submit rejection
 	async function handleConfirmReject() {
 		if (!rejectionModalDraft) return;
@@ -401,6 +401,8 @@
 <svelte:head>
 	<title>Drafts & Approvals • ClientAgent</title>
 </svelte:head>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 <div class="min-h-screen bg-[#ddf4ff] p-4 sm:p-6 lg:p-8">
 	<!-- Page Header -->
@@ -671,7 +673,13 @@
 
 <!-- Rejection Reason Modal -->
 {#if rejectionModalDraft}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+	<div
+		role="presentation"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) closeRejectionModal();
+		}}
+	>
 		<div class="bg-white rounded-xl border-2 border-[#c7e8fa] shadow-xl max-w-md w-full p-5 sm:p-6 space-y-4">
 			<div class="flex items-center justify-between pb-3 border-b border-slate-100">
 				<div class="flex items-center gap-2 text-[#ff4b4b]">
