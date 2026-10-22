@@ -12,6 +12,7 @@ import {
   markTaskRunning,
   upsertClient,
   upsertConversation,
+  listClientMemories,
 } from '@client-agent/db';
 import { AuditAction, DraftStatus, TaskStatus } from '@client-agent/domain';
 import type { ParsedTask } from '@client-agent/queue';
@@ -71,6 +72,8 @@ export async function handleGenerateReplyDraft(
     let client = await getClientByUsername(ownerId, 'vgen', input.clientUsername);
 
     let messagesList: PromptMessageHistory[] = [];
+    let memoryList: { type: string; category: string; content: string }[] = [];
+
     if (client) {
       const conv = await getConversationByClientId(client.id);
       if (conv) {
@@ -82,6 +85,13 @@ export async function handleGenerateReplyDraft(
           sentAt: m.sentAt ?? new Date(),
         }));
       }
+
+      const clientMems = await listClientMemories(client.id);
+      memoryList = clientMems.map((m) => ({
+        type: m.type,
+        category: m.category,
+        content: m.content,
+      }));
     }
 
     const context: ConversationContextForPrompt = {
@@ -89,6 +99,7 @@ export async function handleGenerateReplyDraft(
       clientDisplayName: client?.displayName ?? undefined,
       creatorUsername: 'r1daz_',
       messages: messagesList,
+      memories: memoryList,
     };
 
     const promptMessages = buildReplyPrompt(context, input.instruction, input.tone);

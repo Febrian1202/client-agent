@@ -8,6 +8,7 @@ import {
   markTaskCompleted,
   markTaskFailed,
   markTaskRunning,
+  listClientMemories,
 } from '@client-agent/db';
 import { TaskStatus } from '@client-agent/domain';
 import type { ParsedTask } from '@client-agent/queue';
@@ -61,6 +62,8 @@ export async function handleGenerateSummary(
     const client = await getClientByUsername(ownerId, 'vgen', input.clientUsername);
 
     let messagesList: PromptMessageHistory[] = [];
+    let memoryList: { type: string; category: string; content: string }[] = [];
+
     if (client) {
       const conv = await getConversationByClientId(client.id);
       if (conv) {
@@ -72,6 +75,13 @@ export async function handleGenerateSummary(
           sentAt: m.sentAt ?? new Date(),
         }));
       }
+
+      const clientMems = await listClientMemories(client.id);
+      memoryList = clientMems.map((m) => ({
+        type: m.type,
+        category: m.category,
+        content: m.content,
+      }));
     }
 
     const context: ConversationContextForPrompt = {
@@ -79,6 +89,7 @@ export async function handleGenerateSummary(
       clientDisplayName: client?.displayName ?? undefined,
       creatorUsername: 'r1daz_',
       messages: messagesList,
+      memories: memoryList,
     };
 
     const promptMessages = buildSummaryPrompt(context);
