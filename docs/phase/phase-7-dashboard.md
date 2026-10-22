@@ -79,13 +79,13 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ## Atomic Task Breakdown
 
 ### Task 7.1: Auth Guard & Navigation Layout (Matches `docs/pen/ui.pen`)
-- [ ] In `apps/web/src/hooks.server.ts`:
+- [x] In `apps/web/src/hooks.server.ts`:
   - Intercept every request.
   - Read `session` cookie.
   - Forward request to `GET /api/v1/auth/me`.
   - If invalid and route is not `/login`, redirect to `/login`.
   - Populate `event.locals.user`.
-- [ ] In `apps/web/src/routes/+layout.svelte`:
+- [x] In `apps/web/src/routes/+layout.svelte`:
   - Root canvas container styled with `bg-[#ddf4ff]` and font Inter / duolingo-sans.
   - Responsive Sidebar navigation (`w-[250px]` bg-white with 12px rounded items):
     - Brand container: ClientAgent logo badge with bot icon (`#a5ed6e`), title, and "VGen Creator Studio" subtitle (`#1cb0f6`).
@@ -107,7 +107,7 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.2: Dashboard Home Overview (`/dashboard` — Directly Implements `docs/pen/ui.pen`)
-- [ ] In `apps/web/src/routes/dashboard/+page.svelte`:
+- [x] In `apps/web/src/routes/dashboard/+page.svelte`:
   - **Header Row:**
     - Page Title ("Dashboard Overview") & Subtitle summarizing active items.
     - Quick actions: "Sync VGen" button (outline) and "Review Drafts (3)" primary CTA (`#a5ed6e`).
@@ -139,7 +139,7 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.3: Agent Task Monitor (`/agent`)
-- [ ] In `apps/web/src/routes/agent/+page.svelte`:
+- [x] In `apps/web/src/routes/agent/+page.svelte`:
   - Table of recent background tasks from `GET /api/v1/agent/tasks`.
   - Columns: Task ID, Type, Status badge (`queued`, `running`, `completed`, `failed`, `dead`), Attempts, Created At, Action.
   - Click task to open sheet/dialog showing:
@@ -150,11 +150,11 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.4: Conversation & Message Viewer (`/conversations`)
-- [ ] In `apps/web/src/routes/conversations/+page.svelte`:
+- [x] In `apps/web/src/routes/conversations/+page.svelte`:
   - Two-pane split view (like modern chat clients):
     - Left pane: Conversation list (Client username, last message snippet, sync timestamp).
     - Right pane: Active conversation thread.
-- [ ] Thread details view (`/conversations/[id]`):
+- [x] Thread details view (`/conversations/[id]`):
   - Message bubble list displaying inbound vs outbound messages with sender name and time.
   - "Sync from VGen" button (triggers `POST /api/v1/conversations/:id/sync`).
   - Quick action: "Generate AI Reply" input box (calls `POST /api/v1/agent/run`).
@@ -162,7 +162,7 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.5: Drafts & Approvals Manager (`/drafts`)
-- [ ] In `apps/web/src/routes/drafts/+page.svelte`:
+- [x] In `apps/web/src/routes/drafts/+page.svelte`:
   - Filter tabs: `Pending Approval`, `Approved`, `Sent`, `Rejected`.
   - Draft Card component:
     - Target client name & conversation link
@@ -177,11 +177,11 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.6: Clients & Commissions (`/clients` & `/commissions`)
-- [ ] In `apps/web/src/routes/clients/+page.svelte`:
+- [x] In `apps/web/src/routes/clients/+page.svelte`:
   - Client directory with search bar (`?search=...`).
   - Shows username, display name, platform (`vgen`), first seen, last seen dates.
   - Detail page (`/clients/[id]`): Client metadata, conversation links, commission history.
-- [ ] In `apps/web/src/routes/commissions/+page.svelte`:
+- [x] In `apps/web/src/routes/commissions/+page.svelte`:
   - Kanban board or table of commissions:
     - Columns: `Requested`, `Accepted`, `In Progress`, `Delivered`, `Completed`.
     - Cards show service name, amount, client name, delivery date deadline.
@@ -189,12 +189,12 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ### Task 7.7: Integrations & Audit Log (`/integrations` & `/audit-log`)
-- [ ] In `apps/web/src/routes/integrations/+page.svelte`:
+- [x] In `apps/web/src/routes/integrations/+page.svelte`:
   - Connection status cards for:
     - Gmail (Pub/Sub connected / last sync time / reconnect button)
     - Discord Bot (online status / guild name / target channel)
   - VGen Browser Session status indicator (Session valid vs expired warning).
-- [ ] In `apps/web/src/routes/audit-log/+page.svelte`:
+- [x] In `apps/web/src/routes/audit-log/+page.svelte`:
   - Read-only table of immutable audit logs:
     - Timestamp, Actor (`user` / `agent`), Action (`USER_APPROVED_DRAFT`, `MESSAGE_SENT`, etc.), Target, IP address.
 
@@ -220,9 +220,9 @@ Priority 6: Integrations & Audit Log (/integrations, /audit-log)
 ---
 
 ## Done When Checklist
-- [ ] All pages render with responsive layout, shadcn-svelte styling, and Lucide icons.
-- [ ] Unauthorized users are redirected to the login page.
-- [ ] Dashboard displays accurate summary metrics and real-time task statuses.
-- [ ] Conversations and messages can be browsed and manually synced.
-- [ ] Drafts can be reviewed, edited, approved, and dispatched directly from the web interface.
-- [ ] Audit logs and integration statuses are visible and up-to-date.
+- [x] All pages render with responsive layout, shadcn-svelte styling, and Lucide icons.
+- [x] Unauthorized users are redirected to the login page.
+- [x] Dashboard displays accurate summary metrics and real-time task statuses.
+- [x] Conversations and messages can be browsed and manually synced.
+- [x] Drafts can be reviewed, edited, approved, and dispatched directly from the web interface.
+- [x] Audit logs and integration statuses are visible and up-to-date.
