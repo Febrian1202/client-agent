@@ -78,12 +78,16 @@ export async function handleGenerateReplyDraft(
       const conv = await getConversationByClientId(client.id);
       if (conv) {
         const storedMessages = await getMessagesByConversationId(conv.id, 30);
-        messagesList = storedMessages.map((m) => ({
-          direction: m.direction as 'inbound' | 'outbound',
-          senderName: m.senderName,
-          content: m.content,
-          sentAt: m.sentAt ?? new Date(),
-        }));
+        messagesList = storedMessages.map((m) => {
+          const meta = (m.metadata || {}) as Record<string, any>;
+          return {
+            direction: m.direction as 'inbound' | 'outbound',
+            senderName: m.senderName,
+            content: m.content,
+            sentAt: m.sentAt ?? new Date(),
+            attachments: Array.isArray(meta.attachments) ? meta.attachments : undefined,
+          };
+        });
       }
 
       const clientMems = await listClientMemories(client.id);

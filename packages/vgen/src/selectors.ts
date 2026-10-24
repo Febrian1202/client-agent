@@ -11,6 +11,12 @@ export const MESSAGE_SENDER_SELECTOR = '[data-testid="message-sender"]';
 export const MESSAGE_BODY_SELECTOR = '[data-testid="message-body"]';
 export const MESSAGE_TIME_SELECTOR = 'time';
 export const OUTBOUND_MARKER = 'data-outbound'; // attribute on outbound message blocks
+export const ATTACHMENT_CONTAINER_SELECTOR =
+  '.str-chat__message-attachment, .str-chat__gallery, [data-testid="message-attachment"], [data-testid="gallery-image"], [class*="attachment"]';
+export const ATTACHMENT_IMAGE_SELECTOR =
+  '.str-chat__gallery img, .str-chat__message-attachment img, img.str-chat__gallery-image, [data-testid="gallery-image"] img, [data-testid="gallery-image"]';
+export const ATTACHMENT_FILE_SELECTOR =
+  '.str-chat__message-attachment-file, .str-chat__message-attachment--file, a[download], a.str-chat__message-attachment-file--item, [data-testid="file-attachment"]';
 export const MESSAGE_INPUT_SELECTOR = '[data-testid="message-input"], textarea[placeholder*="message" i], .str-chat__textarea textarea';
 export const SEND_BUTTON_SELECTOR =
   'button.sendButton, button:has(.sendIconContainer), [data-testid="send-button"], button[type="submit"], button:has-text("Send")';

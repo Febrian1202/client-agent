@@ -79,6 +79,91 @@ describe('extractMessages', () => {
     expect(messages).toBeArrayOfSize(2);
     expect(messages.map((m) => m.senderName)).toEqual(['Rida', 'ErianOsamu']);
   });
+
+  it('captures messages with standalone image attachments even when body text is empty', () => {
+    const html = `
+      <div data-testid="thread-message">
+        <span data-testid="message-sender">ErianOsamu</span>
+        <p data-testid="message-body"></p>
+        <div class="str-chat__gallery">
+          <img src="https://vgen.co/media/char_model_sheet.png" alt="char_model_sheet.png" />
+        </div>
+        <time>10m ago</time>
+      </div>
+    `;
+
+    const messages = extractMessages(html);
+    expect(messages).toBeArrayOfSize(1);
+    expect(messages[0]!.senderName).toBe('ErianOsamu');
+    expect(messages[0]!.content).toBe('[Attached image: char_model_sheet.png]');
+    expect(messages[0]!.attachments).toEqual([
+      {
+        type: 'image',
+        url: 'https://vgen.co/media/char_model_sheet.png',
+        name: 'char_model_sheet.png',
+      },
+    ]);
+  });
+
+  it('captures messages with both body text and image attachments', () => {
+    const html = `
+      <div data-testid="thread-message">
+        <span data-testid="message-sender">ErianOsamu</span>
+        <p data-testid="message-body">Here is the character reference for cutting:</p>
+        <div class="str-chat__gallery">
+          <img src="https://vgen.co/media/ref.png" alt="ref.png" />
+        </div>
+        <time>5m ago</time>
+      </div>
+    `;
+
+    const messages = extractMessages(html);
+    expect(messages).toBeArrayOfSize(1);
+    expect(messages[0]!.content).toBe(
+      'Here is the character reference for cutting:\n[Attached image: ref.png]',
+    );
+    expect(messages[0]!.attachments).toHaveLength(1);
+    expect(messages[0]!.attachments![0]!.name).toBe('ref.png');
+  });
+
+  it('ignores avatar images and does not treat them as attachments', () => {
+    const html = `
+      <div data-testid="thread-message">
+        <div class="str-chat__avatar">
+          <img src="https://vgen.co/avatars/user123.jpg" alt="Avatar" />
+        </div>
+        <span data-testid="message-sender">ErianOsamu</span>
+        <p data-testid="message-body">Hello without attachments.</p>
+      </div>
+    `;
+
+    const messages = extractMessages(html);
+    expect(messages).toBeArrayOfSize(1);
+    expect(messages[0]!.content).toBe('Hello without attachments.');
+    expect(messages[0]!.attachments).toBeUndefined();
+  });
+
+  it('captures file attachments and appends to content', () => {
+    const html = `
+      <div data-testid="thread-message">
+        <span data-testid="message-sender">ErianOsamu</span>
+        <div class="str-chat__message-attachment-file">
+          <a href="https://vgen.co/files/model.psd" download="model.psd">model.psd (45MB)</a>
+        </div>
+      </div>
+    `;
+
+    const messages = extractMessages(html);
+    expect(messages).toBeArrayOfSize(1);
+    expect(messages[0]!.content).toBe('[Attached file: model.psd (45MB)]');
+    expect(messages[0]!.attachments).toEqual([
+      {
+        type: 'file',
+        url: 'https://vgen.co/files/model.psd',
+        name: 'model.psd (45MB)',
+      },
+    ]);
+  });
 });
 
 describe('toMessageResult', () => {
@@ -130,6 +215,27 @@ describe('toMessageResult', () => {
     expect(result.direction).toBe('outbound');
     expect(result.sentAt).toBeNull();
     expect(result.sentAtRaw).toBeNull();
+  });
+
+  it('forwards attachments array to MessageResult', () => {
+    const withAttachments = {
+      ...base,
+      attachments: [
+        {
+          type: 'image' as const,
+          url: 'https://vgen.co/media/test.png',
+          name: 'test.png',
+        },
+      ],
+    };
+    const result = toMessageResult(withAttachments, 'abc123');
+    expect(result.attachments).toEqual([
+      {
+        type: 'image',
+        url: 'https://vgen.co/media/test.png',
+        name: 'test.png',
+      },
+    ]);
   });
 });
 

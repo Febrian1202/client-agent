@@ -1,10 +1,12 @@
-import type { ChatMessage } from '@client-agent/ai';
+import type { ChatMessage, ChatContentPart } from '@client-agent/ai';
+import type { MessageAttachment } from '@client-agent/platform';
 
 export interface PromptMessageHistory {
   direction: 'inbound' | 'outbound';
   senderName: string;
   content: string;
   sentAt: Date | string;
+  attachments?: MessageAttachment[];
 }
 
 export interface ClientMemoryItemForPrompt {
@@ -105,16 +107,51 @@ Your goal is to provide an accurate, high-density summary of the conversation wi
 ${historyText}
 ---
 ${memoryBlock ? `\n${memoryBlock}\n` : ''}
+MEDIA & ATTACHMENT GUIDELINES:
+- If the client attached images, character references, or files (indicated in messages or provided via attached images):
+  * Under 'Key Details & Client Requests', analyze and describe the visual content of the attached media (character design, style, outfit, colors, or asset type) and how it connects to the creator's Live2D cutting/rigging services.
+  * NEVER report 'no details provided' or 'unknown request' if visual references are attached. The visual content of the attached image IS key information for the commission.
+  * Under 'Next Action for Creator', suggest concrete follow-ups acknowledging the visual material (e.g., clarify if client has a layered PSD for cutting or needs redraw/separation from a flat image).
+
 Please analyze the conversation above and provide a structured summary with the following clear sections:
 1. **Status / Stage**: Current status (e.g., Initial Inquiry, Price Discussion, Work in Progress, Revision Requested, Delivered/Complete).
-2. **Key Details & Client Requests**: Bullet points detailing specifically what the client asked for or inquired about.
+2. **Key Details & Client Requests**: Bullet points detailing specifically what the client asked for or inquired about, including visual details of any attached images.
 3. **Next Action for Creator**: The single most immediate and actionable next step for the creator.
 
 Keep it grounded strictly in the messages above. If anything is ambiguous or uncertain, explicitly note it as unverified.`;
 
+  // Collect image attachments for multimodal vision models
+  const imageUrls: string[] = [];
+  if (context.messages) {
+    for (const msg of context.messages) {
+      if (msg.attachments) {
+        for (const att of msg.attachments) {
+          if (
+            att.type === 'image' &&
+            att.url &&
+            (att.url.startsWith('http://') ||
+              att.url.startsWith('https://') ||
+              att.url.startsWith('data:image/'))
+          ) {
+            imageUrls.push(att.url);
+          }
+        }
+      }
+    }
+  }
+
+  let finalUserContent: string | ChatContentPart[] = userContent;
+  if (imageUrls.length > 0) {
+    const parts: ChatContentPart[] = [{ type: 'text', text: userContent }];
+    for (const url of imageUrls) {
+      parts.push({ type: 'image_url', image_url: { url } });
+    }
+    finalUserContent = parts;
+  }
+
   return [
     { role: 'system', content: systemContent },
-    { role: 'user', content: userContent },
+    { role: 'user', content: finalUserContent },
   ];
 }
 
@@ -135,6 +172,7 @@ IMPORTANT CONSTRAINTS FOR DRAFTING:
 - Maximum 1 emoji or none.
 - Receptive to minor revisions.
 - Follow the creator's instruction faithfully without overpromising.
+- If the client shared reference images or artwork, naturally acknowledge and refer to what they shared (e.g. complimenting the character design, asking about PSD layer separation vs flat illustration).
 - Use verified facts and known preferences to personalize your draft. If referencing an inference, phrase it gently as a question, and NEVER state an unverified inference as a confirmed fact.
 - Write ONLY the draft message itself so the creator can review and send it directly.`;
 
@@ -150,8 +188,37 @@ ${tone ? `Desired Tone Adjustment: ${tone}` : ''}
 
 Draft the reply message to the client according to the instruction above:`;
 
+  // Collect image attachments for multimodal vision models
+  const imageUrls: string[] = [];
+  if (context.messages) {
+    for (const msg of context.messages) {
+      if (msg.attachments) {
+        for (const att of msg.attachments) {
+          if (
+            att.type === 'image' &&
+            att.url &&
+            (att.url.startsWith('http://') ||
+              att.url.startsWith('https://') ||
+              att.url.startsWith('data:image/'))
+          ) {
+            imageUrls.push(att.url);
+          }
+        }
+      }
+    }
+  }
+
+  let finalUserContent: string | ChatContentPart[] = userContent;
+  if (imageUrls.length > 0) {
+    const parts: ChatContentPart[] = [{ type: 'text', text: userContent }];
+    for (const url of imageUrls) {
+      parts.push({ type: 'image_url', image_url: { url } });
+    }
+    finalUserContent = parts;
+  }
+
   return [
     { role: 'system', content: systemContent },
-    { role: 'user', content: userContent },
+    { role: 'user', content: finalUserContent },
   ];
 }

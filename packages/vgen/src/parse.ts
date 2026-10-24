@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import type { MessageResult } from '@client-agent/platform';
+import type { MessageAttachment, MessageResult } from '@client-agent/platform';
 import { sha256Hex } from '@client-agent/shared';
 import {
   MESSAGE_BODY_SELECTOR,
@@ -15,6 +15,7 @@ export interface ParsedThreadMessage {
   content: string;
   sentAtRaw: string | null;
   isOutbound: boolean;
+  attachments?: MessageAttachment[];
 }
 
 export function extractMessages(blockHtml: string | string[]): ParsedThreadMessage[] {
@@ -26,7 +27,7 @@ export function extractMessages(blockHtml: string | string[]): ParsedThreadMessa
     .flatMap((element) => {
       const block = $(element);
       const testBody = block.find(MESSAGE_BODY_SELECTOR);
-      const content = (
+      const textContent = (
         testBody.length
           ? testBody.text()
           : (block.find('.str-chat__message-text-inner').first().length
@@ -34,6 +35,64 @@ export function extractMessages(blockHtml: string | string[]): ParsedThreadMessa
               : block.find('.str-chat__message-text').first()
             ).text()
       ).trim();
+
+      const attachments: MessageAttachment[] = [];
+      const attachmentLabels: string[] = [];
+      const seenImageUrls = new Set<string>();
+      const seenFileUrls = new Set<string>();
+
+      // Extract image attachments (excluding sender/user avatars)
+      block.find('img').each((_, imgEl) => {
+        const img = $(imgEl);
+        if (
+          img.closest('.str-chat__avatar, [data-testid*="avatar"], [class*="avatar"]').length > 0 ||
+          img.is('[alt="Avatar"], [alt="Account"], [alt="user avatar" i]')
+        ) {
+          return;
+        }
+
+        const src = img.attr('src') || img.attr('data-src') || '';
+        const alt = img.attr('alt') || img.attr('title') || '';
+        if (src && !seenImageUrls.has(src)) {
+          seenImageUrls.add(src);
+          attachments.push({
+            type: 'image',
+            url: src,
+            name: alt || undefined,
+          });
+          const label = alt && alt !== 'image' && !alt.startsWith('http') ? alt : src;
+          attachmentLabels.push(`[Attached image: ${label}]`);
+        }
+      });
+
+      // Extract file attachments
+      block
+        .find(
+          'a[download], .str-chat__message-attachment-file a, .str-chat__message-attachment--file a, a.str-chat__message-attachment-file--item, [data-testid="file-attachment"] a, .str-chat__message-attachment-file, [data-testid="file-attachment"]',
+        )
+        .each((_, fileEl) => {
+          const fileNode = $(fileEl);
+          const link = fileNode.is('a') ? fileNode : fileNode.find('a');
+          const href = link.attr('href') || fileNode.attr('href') || '';
+          const name = link.length
+            ? link.text().trim() || link.attr('download') || href
+            : fileNode.text().trim() || href;
+          const dedupeKey = href || name;
+          if (dedupeKey && !seenFileUrls.has(dedupeKey)) {
+            seenFileUrls.add(dedupeKey);
+            attachments.push({
+              type: 'file',
+              url: href,
+              name: name || undefined,
+            });
+            attachmentLabels.push(`[Attached file: ${name || href}]`);
+          }
+        });
+
+      let content = textContent;
+      if (attachmentLabels.length > 0) {
+        content = textContent ? `${textContent}\n${attachmentLabels.join('\n')}` : attachmentLabels.join('\n');
+      }
 
       if (!content) return [];
 
@@ -60,6 +119,7 @@ export function extractMessages(blockHtml: string | string[]): ParsedThreadMessa
           content,
           sentAtRaw,
           isOutbound,
+          attachments: attachments.length > 0 ? attachments : undefined,
         },
       ];
     });
@@ -73,6 +133,7 @@ export function toMessageResult(m: ParsedThreadMessage, threadId: string): Messa
     content: m.content,
     sentAt: parseVGenTimestamp(m.sentAtRaw),
     sentAtRaw: m.sentAtRaw,
+    attachments: m.attachments && m.attachments.length > 0 ? m.attachments : undefined,
   };
 }
 

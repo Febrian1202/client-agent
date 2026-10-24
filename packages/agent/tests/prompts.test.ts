@@ -82,4 +82,76 @@ describe('Prompt Architecture & Anti-Slop Builder', () => {
     const messages = buildSummaryPrompt(emptyHistory);
     expect(messages[1]!.content).toContain('No prior message history found');
   });
+
+  it('builds multimodal summary prompt with image_url parts when messages contain image attachments', () => {
+    const historyWithImages: ConversationContextForPrompt = {
+      clientUsername: 'art_buyer',
+      creatorUsername: 'r1daz_',
+      messages: [
+        {
+          direction: 'inbound',
+          senderName: 'ArtBuyer',
+          content: 'Hi! Here is the character model sheet for layer cutting:\n[Attached image: model_sheet.png]',
+          sentAt: new Date('2026-10-17T15:00:00Z'),
+          attachments: [
+            {
+              type: 'image',
+              url: 'https://vgen.co/media/model_sheet.png',
+              name: 'model_sheet.png',
+            },
+          ],
+        },
+      ],
+    };
+
+    const messages = buildSummaryPrompt(historyWithImages);
+    expect(messages.length).toBe(2);
+    expect(messages[1]!.role).toBe('user');
+    expect(Array.isArray(messages[1]!.content)).toBeTrue();
+
+    const parts = messages[1]!.content as any[];
+    expect(parts).toHaveLength(2);
+    expect(parts[0].type).toBe('text');
+    expect(parts[0].text).toContain('MEDIA & ATTACHMENT GUIDELINES');
+    expect(parts[0].text).toContain('model_sheet.png');
+    expect(parts[1]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'https://vgen.co/media/model_sheet.png' },
+    });
+  });
+
+  it('builds multimodal reply prompt with image_url parts when messages contain image attachments', () => {
+    const historyWithImages: ConversationContextForPrompt = {
+      clientUsername: 'art_buyer',
+      creatorUsername: 'r1daz_',
+      messages: [
+        {
+          direction: 'inbound',
+          senderName: 'ArtBuyer',
+          content: '[Attached image: char.png]',
+          sentAt: new Date('2026-10-17T15:00:00Z'),
+          attachments: [
+            {
+              type: 'image',
+              url: 'https://vgen.co/media/char.png',
+              name: 'char.png',
+            },
+          ],
+        },
+      ],
+    };
+
+    const messages = buildReplyPrompt(historyWithImages, 'Ask if they have a PSD file ready');
+    expect(messages.length).toBe(2);
+    expect(Array.isArray(messages[1]!.content)).toBeTrue();
+
+    const parts = messages[1]!.content as any[];
+    expect(parts).toHaveLength(2);
+    expect(parts[0].type).toBe('text');
+    expect(parts[0].text).toContain('Ask if they have a PSD file ready');
+    expect(parts[1]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'https://vgen.co/media/char.png' },
+    });
+  });
 });

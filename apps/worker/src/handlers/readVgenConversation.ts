@@ -143,7 +143,10 @@ export async function runConversationRead(
       senderName: message.senderName,
       content: message.content,
       sentAt: message.sentAt,
-      metadata: { sentAtRaw: message.sentAtRaw ?? null },
+      metadata: {
+        sentAtRaw: message.sentAtRaw ?? null,
+        attachments: message.attachments ?? [],
+      },
     })),
   );
 

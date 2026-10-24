@@ -13,6 +13,13 @@ export interface GetConversationInput {
   limit?: number;
 }
 
+export interface MessageAttachment {
+  type: 'image' | 'file';
+  url: string;
+  name?: string;
+  mimeType?: string;
+}
+
 export interface MessageResult {
   externalId: string;
   direction: 'inbound' | 'outbound';
@@ -20,6 +27,7 @@ export interface MessageResult {
   content: string;
   sentAt: Date | null;
   sentAtRaw?: string | null;
+  attachments?: MessageAttachment[];
 }
 
 export interface ConversationResult {

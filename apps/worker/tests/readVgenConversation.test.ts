@@ -235,6 +235,43 @@ describe('READ_VGEN_CONVERSATION handler', () => {
     expect(outbound.senderType).toBe('creator');
   });
 
+  it('persists message attachments in message metadata', async () => {
+    const username = `Erian_${runTag}_att`;
+    const externalId = `conv_${runTag}_att`;
+    const msgWithAttachment = message(`${externalId}-att1`, {
+      content: 'Here is the image:\n[Attached image: ref.png]',
+      attachments: [
+        {
+          type: 'image',
+          url: 'https://vgen.co/media/ref.png',
+          name: 'ref.png',
+        },
+      ],
+    });
+
+    const adapter = makeAdapter(async () => ({
+      externalId,
+      externalUrl: `https://vgen.co/thread/${externalId}`,
+      clientUsername: username,
+      messages: [msgWithAttachment],
+    }));
+    const task = await seedTask({ clientUsername: username, requestedBy: 'api' });
+
+    const output = await handleReadVgenConversation(parsedTask(task.id), { adapter, messenger: null });
+    trackConversation(output);
+
+    const stored = await db.select().from(messages).where(eq(messages.conversationId, output.conversationId));
+    expect(stored).toHaveLength(1);
+    const meta = stored[0]!.metadata as any;
+    expect(meta.attachments).toEqual([
+      {
+        type: 'image',
+        url: 'https://vgen.co/media/ref.png',
+        name: 'ref.png',
+      },
+    ]);
+  });
+
   it('alerts the channel and audited SESSION_EXPIRED before failing non-retriably', async () => {
     const username = `Erian_${runTag}_exp`;
     const { messenger, calls } = makeMessenger();

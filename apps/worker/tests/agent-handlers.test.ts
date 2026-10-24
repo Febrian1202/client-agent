@@ -256,4 +256,90 @@ describe('Worker Agent Handlers', () => {
     expect(mockMessenger.sentMessages[0]!.length).toBeLessThanOrEqual(2000);
     expect(mockMessenger.sentMessages[0]!.endsWith('...')).toBe(true);
   });
+
+  it('passes image attachments from message metadata to multimodal AI prompt in generateSummary', async () => {
+    seq++;
+    const mediaClientUsername = `client_media_${Date.now()}`;
+    const client = await upsertClient({
+      userId: ownerId,
+      platform: 'vgen',
+      username: mediaClientUsername,
+    });
+    createdClientIds.push(client.id);
+
+    const conv = await upsertConversation({
+      clientId: client.id,
+      platform: 'vgen',
+      externalId: `thread_${mediaClientUsername}`,
+    });
+    createdConversationIds.push(conv.id);
+
+    await insertMessagesIfNew(conv.id, [
+      {
+        externalId: `msg-media-${Date.now()}`,
+        direction: 'inbound',
+        senderType: 'client',
+        senderName: mediaClientUsername,
+        content: 'Halo kak, ini referensi model karakternya:\n[Attached image: model_ref.png]',
+        sentAt: new Date(),
+        metadata: {
+          attachments: [
+            {
+              type: 'image',
+              url: 'https://vgen.co/media/model_ref.png',
+              name: 'model_ref.png',
+            },
+          ],
+        },
+      },
+    ]);
+
+    const task = await createTask({
+      userId: ownerId,
+      type: TaskType.GENERATE_SUMMARY,
+      input: {
+        clientUsername: mediaClientUsername,
+        requestedBy: 'api',
+      },
+      idempotencyKey: `${runTag}-${seq}`,
+    });
+    createdTaskIds.push(task.id);
+
+    let passedMessages: any[] = [];
+    const mockAi = {
+      createChatCompletion: async (opts: any) => {
+        passedMessages = opts.messages;
+        return {
+          content: '1. Status: Initial Inquiry\n2. Key Details: Character reference attached\n3. Next Action: Clarify requirements',
+          finishReason: 'stop',
+          model: 'gemini_flash',
+          usage: { promptTokens: 200, completionTokens: 40, totalTokens: 240 },
+          durationMs: 300,
+        };
+      },
+    } as unknown as OpenAICompatibleClient;
+
+    const parsedTask: ParsedTask = {
+      id: 'stream-msg-media',
+      data: {
+        type: String(TaskType.GENERATE_SUMMARY),
+        taskId: String(task.id),
+      },
+    };
+
+    await handleGenerateSummary(parsedTask, {
+      aiClient: mockAi,
+    });
+
+    const refreshed = await getTaskById(task.id);
+    expect(refreshed?.status).toBe(TaskStatus.COMPLETED);
+
+    // Verify passed prompt contained image_url
+    expect(passedMessages.length).toBe(2);
+    expect(Array.isArray(passedMessages[1].content)).toBeTrue();
+    const parts = passedMessages[1].content;
+    const imgPart = parts.find((p: any) => p.type === 'image_url');
+    expect(imgPart).toBeDefined();
+    expect(imgPart.image_url.url).toBe('https://vgen.co/media/model_ref.png');
+  });
 });

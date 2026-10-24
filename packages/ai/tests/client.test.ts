@@ -237,4 +237,50 @@ describe('OpenAICompatibleClient', () => {
       })
     ).rejects.toThrow('Request timed out after 50ms');
   });
+
+  it('supports multimodal messages with text and image_url parts', async () => {
+    requestLog = [];
+    responseGenerator = () =>
+      new Response(
+        JSON.stringify({
+          id: 'chatcmpl-test-multimodal',
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: 'I see a character reference sheet with 3 poses.',
+              },
+              finish_reason: 'stop',
+            },
+          ],
+          usage: { prompt_tokens: 250, completion_tokens: 12, total_tokens: 262 },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+
+    const client = new OpenAICompatibleClient({
+      baseURL: mockBaseUrl,
+      apiKey: 'test-key',
+    });
+
+    const result = await client.createChatCompletion({
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Describe the reference image.' },
+            { type: 'image_url', image_url: { url: 'https://vgen.co/media/test.png' } },
+          ],
+        },
+      ],
+    });
+
+    expect(requestLog.length).toBe(1);
+    expect(requestLog[0]!.body.messages[0].content).toEqual([
+      { type: 'text', text: 'Describe the reference image.' },
+      { type: 'image_url', image_url: { url: 'https://vgen.co/media/test.png' } },
+    ]);
+    expect(result.content).toBe('I see a character reference sheet with 3 poses.');
+  });
 });
