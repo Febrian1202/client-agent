@@ -21,7 +21,14 @@ function loadRootEnv() {
           const eqIdx = trimmed.indexOf('=');
           if (eqIdx > 0) {
             const key = trimmed.slice(0, eqIdx).trim();
-            const val = trimmed.slice(eqIdx + 1).trim();
+            let val = trimmed.slice(eqIdx + 1).trim();
+            if (
+              (val.startsWith("'") && val.endsWith("'")) ||
+              (val.startsWith('"') && val.endsWith('"'))
+            ) {
+              val = val.slice(1, -1);
+            }
+            val = val.replaceAll('\\$', '$');
             if (!process.env[key]) {
               process.env[key] = val;
             }
@@ -32,6 +39,10 @@ function loadRootEnv() {
     }
     currentDir = resolve(currentDir, '..');
   }
+}
+
+export function resetConfig(): void {
+  cachedConfig = null;
 }
 
 export function getConfig(): AppConfig {

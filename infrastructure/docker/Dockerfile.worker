@@ -1,4 +1,4 @@
-FROM oven/bun:1-alpine AS base
+FROM oven/bun:1 AS base
 WORKDIR /app
 
 COPY package.json bun.lock tsconfig.json ./
@@ -6,5 +6,6 @@ COPY packages/ ./packages/
 COPY apps/worker/ ./apps/worker/
 
 RUN bun install --frozen-lockfile --production
+RUN bunx playwright install --with-deps chromium
 
 CMD ["bun", "run", "apps/worker/src/index.ts"]

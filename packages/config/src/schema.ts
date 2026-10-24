@@ -16,6 +16,7 @@ export const configSchema = z.object({
 
   // Browser Automation
   BROWSER_PROFILE_PATH: z.string().default('./browser-profile'),
+  VGEN_CREATOR_USERNAME: z.string().optional(),
 
   // Optional / future phase variables
   GOOGLE_CLIENT_ID: z.string().optional(),

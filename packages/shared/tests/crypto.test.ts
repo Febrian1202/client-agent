@@ -14,6 +14,13 @@ describe('Shared Crypto and ID Utilities', () => {
 
     const isInvalid = await verifyPassword('wrongPassword', hash);
     expect(isInvalid).toBeFalse();
+
+    // Handles escaped dollar signs and enclosing quotes
+    const escapedHash = `'${hash.replaceAll('$', '\\$')}'`;
+    expect(await verifyPassword(password, escapedHash)).toBeTrue();
+
+    // Gracefully handles malformed or unsupported hash without throwing
+    expect(await verifyPassword(password, 'malformed_hash')).toBeFalse();
   });
 
   it('generates unique random IDs with optional prefix', () => {

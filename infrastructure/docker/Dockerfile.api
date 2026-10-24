@@ -9,4 +9,5 @@ COPY apps/api/ ./apps/api/
 RUN bun install --frozen-lockfile --production
 
 EXPOSE 3001
-CMD ["bun", "run", "apps/api/src/index.ts"]
+CMD ["sh", "-c", "bun run packages/db/src/migrate.ts && bun run apps/api/src/index.ts"]
+

@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit && bun run --filter=@client-agent/web check",
     "browser:auth": "bun run scripts/setup-browser-session.ts",
     "browser:smoke": "bun run packages/vgen/scripts/smoke-vgen-read.ts",
+    "generate:password": "bun run scripts/generate-password.ts",
     "test": "bun test"
   },
   "devDependencies": {
